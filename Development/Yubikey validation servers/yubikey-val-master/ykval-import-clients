@@ -1,0 +1,86 @@
+#!/usr/bin/php
+<?php
+
+# Copyright (c) 2012-2013 Yubico AB
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+set_include_path(get_include_path() . PATH_SEPARATOR . "/usr/share/yubikey-val:/etc/yubico/val");
+
+require_once 'ykval-config.php';
+require_once 'ykval-db.php';
+
+
+$logname="ykval-import";
+$myLog = new Log($logname);
+
+$db = Db::GetDatabaseHandle($baseParams, $logname);
+
+if (!$db->connect()) {
+  $myLog->log(LOG_WARNING, "Could not connect to database");
+  error_log("Could not connect to database");
+  exit(1);
+ }
+
+
+while ($res=fgetcsv(STDIN, 0, ",")) {
+  if($res[0]===null || strpos($res[0], '#')===0) continue;
+
+  $params=array("id"=>$res[0],
+		"active"=>$res[1],
+		"created"=>$res[2],
+		"secret"=>$res[3],
+		"email"=>$res[4],
+		"notes"=>$res[5],
+		"otp"=>$res[6]);
+
+
+  $query="SELECT * FROM clients WHERE id='" . $params['id'] . "'";
+  $result=$db->customQuery($query);
+  if($db->rowCount($result) == 0) {
+    // We didn't have the id in database so we need to do insert instead
+    $query="INSERT INTO clients " .
+      "(id,active,created,secret,email,notes,otp) VALUES " .
+      "('" . $params["id"] . "', " .
+      "'" . $params["active"] . "', " .
+      "'" . $params['created'] . "'," .
+      "'" . $params['secret'] . "'," .
+      "'" . $params['email'] . "'," .
+      "'" . $params['notes'] . "'," .
+      "'" . $params['otp'] . "')";
+
+    if(!$db->customQuery($query)){
+      $myLog->log(LOG_ERR, "Failed to insert new client with query " . $query);
+      error_log("Failed to insert new client with query " . $query);
+      exit(1);
+    }
+  }
+  $db->closeCursor($result);
+ }
+
+
+$myLog->log(LOG_NOTICE, "Successfully imported clients to database");
+echo "Successfully imported clients to database\n";

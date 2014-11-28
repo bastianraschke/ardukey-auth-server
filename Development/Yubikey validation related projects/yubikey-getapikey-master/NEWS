@@ -1,0 +1,12 @@
+* Version 1.2 unreleased
+
+ * Update images.
+
+* Version 1.1 released 2010-03-12
+
+ * Config file is only installed as a template, to avoid accidentally
+   overwriting the live configuration.
+
+* Version 1.0 released 2010-03-11
+
+  * Initial release.
