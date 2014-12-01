@@ -113,15 +113,18 @@ class OTPValidation():
 				cur.execute('SELECT aeskey, internalname FROM yubikeys WHERE publicname = "' + self.userid + '" AND active = "1"')
 				if (cur.rowcount != 1):
 					self.validationResult = self.status['BAD_OTP']
+					print "DEBUG1"
 					return self.validationResult
 				(self.aeskey, self.internalname) = cur.fetchone()
 				self.plaintext = self.aes128ecb_decrypt(self.aeskey, self.token)
 				uid = self.plaintext[:12]
 				if (self.internalname != uid):
 					self.validationResult = self.status['BAD_OTP']
+					print "DEBUG2"
 					return self.validationResult
 				if not (self.CRC() or self.isCRCValid()):
 					self.validationResult = self.status['BAD_OTP']
+					print "DEBUG3"
 					return self.validationResult
 				self.internalcounter = self.hexdec(self.plaintext[14:16] + self.plaintext[12:14] + self.plaintext[22:24])
 				self.timestamp = self.hexdec(self.plaintext[20:22] + self.plaintext[18:20] + self.plaintext[16:18])
@@ -132,9 +135,14 @@ class OTPValidation():
 				(self.counter, self.time) = cur.fetchone()
 				if (self.counter) >= (self.internalcounter):
 					self.validationResult = self.status['REPLAYED_OTP']
+					print "DEBUG4" + " " + str(self.counter) + " " + str(self.internalcounter)
+					print self.plaintext
+					print self.plaintext[14:16] + self.plaintext[12:14] + self.plaintext[22:24]
+					print self.hexdec(self.plaintext[12:16])
 					return self.validationResult
 				if (self.time >= self.timestamp) and ((self.counter >> 8) == (self.internalcounter >> 8)):
 					self.validationResult = self.status['DELAYED_OTP']
+					print "DEBUG5"
 					return self.validationResult
 		except IndexError:
 			self.validationResult = self.status['BAD_OTP']
