@@ -1,2 +1,2 @@
 ## Required Debian packages:
-## python3, python-sqlite, python-crypto
+## python3, python-sqlite, python3-crypto

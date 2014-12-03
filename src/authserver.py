@@ -42,6 +42,8 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
 
+        ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
+
         self.wfile.write(bytes("Hallo Welt", 'utf-8'))
 
 
