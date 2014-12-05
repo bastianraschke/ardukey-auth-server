@@ -82,17 +82,33 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
-            self.send_output('Hallo Welt')
-
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
-
-            ## The OTP parameter
-            otp = requestParameters.get('otp', '')
 
             ## TODO: receive parameters and validates them
             ## TODO: if validation fails: send_response 500
 
-            ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
+            ## Input:
+            ## otp, nonce, apiId, hash
+
+            ## Output:
+            ## status, otp, nonce, datetime, hash
+
+            ## The OTP parameter
+            otp = requestParameters.get('otp', '')
+
+            ## The given nonce
+            nonce = requestParameters.get('nonce', '')
+
+            ## The given api id
+            apiId = requestParameters.get('apiId', 0)
+
+            ## The HMAC hash
+            hash = requestParameters.get('hash', 0)
+
+
+
+
+            self.send_output('Hallo Welt')
 
 
 

@@ -8,16 +8,22 @@ Copyright 2014 Bastian Raschke.
 All rights reserved.
 """
 
+import re
+
 
 class OTPValidation(object):
     """
     ArduKey OTP validation.
 
-    @attribute string __otp
-    The OTP to validate.
+    @attribute string __publicId
+    The public id part of the OTP.
+
+    @attribute string __token
+    The token part of the OTP.
     """
 
-    __otp = ''
+    __publicId = ''
+    __token = ''
 
     def __init__(self, otp):
         """
@@ -26,28 +32,34 @@ class OTPValidation(object):
         @param string otp The OTP to validate.
         """
 
-        if ( len(otp) != 44 ):
-            raise ValueError('The length of the OTP must be 44!')
+        otpLength = len(otp)
 
-        self.__otp = otp
+        ## Pre-regex length check
+        if ( otpLength < 32 or otpLength > 44 ):
+            raise ValueError('The OTP is too short or long!')
+
+        otpRegex = '^([cbdefghijklnrtuv]{0,12})([cbdefghijklnrtuv]{32})$'
+
+        if ( re.search(otpRegex, otp) != None ):
+            raise ValueError('The OTP has an invalid format!')
+
+        self.__publicId = re.group(1)
+        self.__token = re.group(2)
 
 
 
 
 
 
-    def decrypt(self, cipher):
+    def validate(self):
         """
-        Decrypts given cipher text and returns plain text as hexadecimal string.
+        Validates the OTP.
 
-        @param string cipher The cipher text for decryption as hexadecimal string.
-        @return string
+        @return boolean
         """
 
-        if ( len(cipher) != 16 ):
-            raise ValueError('The length of the cipher text must be 16!')
+        ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
 
-        cipherBytes = binascii.unhexlify(cipher.encode('utf-8'))
-        plainBytes = self.__aes.decrypt(cipher)
 
-        return binascii.hexlify(plainBytes)
+
+        return False
