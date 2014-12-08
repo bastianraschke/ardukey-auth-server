@@ -20,6 +20,8 @@ Configuration section
 
 """
 
+## TODO: Move to configuration file
+
 ## The address the server is running on
 SERVER_ADDRESS = '127.0.0.1'
 
@@ -52,6 +54,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         """
         Log an arbitrary message.
+
         @see BaseHTTPRequestHandler
         """
 
@@ -76,7 +79,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         if (url.path == '/ardukeyotp/1.0/verify'):
 
             self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             ## Parses all query arguments to dictionary
@@ -86,14 +89,15 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             validationRequest = ValidationRequest(requestParameters)
             response = validationRequest.getResponse();
 
-            ## Sends JSON fomratted response
+            ## Sends JSON formatted response
             self.send_output(json.dumps(response, indent=None, sort_keys=True))
 
         else:
             self.send_response(200)
-            self.send_header('Content-type', 'text/html')
+            self.send_header('Content-Type', 'text/html')
             self.end_headers()
 
+            self.send_output('<!DOCTYPE html>')
             self.send_output('<html><head><title>' + self.server_version + '</title></head><body>')
             self.send_output('<h1>' + self.server_version + '</h1>')
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
