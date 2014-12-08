@@ -15,7 +15,7 @@ import urllib.parse
 import re
 
 from libraries.AES import AES
-from libraries.SQLite3 import SQLite3
+from libraries.SQLiteWrapper import SQLiteWrapper
 
 
 class ValidationRequest(object):
@@ -116,6 +116,8 @@ class ValidationRequest(object):
         if ( publicId == None or encryptedToken == None ):
             raise ValueError('The OTP has an invalid format!')
 
+
+
         ## Query public id in database and get AES key and shared secret
         ## raise ValueError('The public id was not found in database!')
         ## raise ValueError('The ArduKey has been revoked!')
@@ -159,3 +161,5 @@ class ValidationRequest(object):
             self.__response['hmac'] = hmac.new(sharedSecret, msg=responseData, digestmod=hashlib.sha256).hexdigest()
 
         return self.__response
+
+database = SQLiteWrapper.getInstance()

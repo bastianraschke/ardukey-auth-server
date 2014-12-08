@@ -11,10 +11,13 @@ All rights reserved.
 import sqlite3
 import threading
 
+## TODO
+import os
 
-class SQLite3(object):
+
+class SQLiteWrapper(object):
     """
-    SQLite database wrapper class (multi thread usable).
+    SQLite 2 database wrapper class (multi thread usable).
 
     @attribute dict<Database> __instances
     Singleton instances.
@@ -31,7 +34,9 @@ class SQLite3(object):
 
     __instances = {}
 
-    databaseFile = '/var/ardukey-auth/ardukey-auth.sqlite'
+    ## TODO
+    ## databaseFile = '/var/ardukey-auth/ardukey-auth.sqlite'
+    databaseFile = os.path.dirname(os.path.realpath(__file__)) + '/ardukey-auth.sqlite'
     connection = None
     cursor = None
 
@@ -47,7 +52,7 @@ class SQLite3(object):
         currentThreadID = threading.current_thread().ident
 
         if ( currentThreadID not in self.__instances ):
-            self.__instances[currentThreadID] = self.__class__.__name__()
+            self.__instances[currentThreadID] = self()
 
         return self.__instances[currentThreadID]
 
