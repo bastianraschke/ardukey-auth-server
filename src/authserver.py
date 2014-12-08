@@ -11,13 +11,8 @@ All rights reserved.
 import http.server
 import urllib.parse
 import json
-import time
-import hmac
-import hashlib
 
-import libraries.AES
-import libraries.SQLite3
-import libraries.OTPValidation
+from libraries.ValidationRequest import ValidationRequest
 
 
 """
@@ -84,71 +79,23 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
-
-
-
-            isoDateTime = time.strftime("%Y-%m-%dT%H:%M:%S")
-
-            response = {}
-            response['otp'] = '1'
-            response['nonce'] = '2'
-            response['time'] = isoDateTime
-            response['status'] = 'MISSING_PARAMETER'
-
-
-            responseData = ''
-
-            for element in response.values():
-                responseData += element
-
-            response['hmac'] = hmac.new('secret'.encode('utf-8'), msg=responseData.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
-
-
-
-            """
+            ## Parses all query arguments to dictionary
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
-            ## Input:
-            ## otp, nonce, apiId, hmac
-            ## eg.: http://127.0.0.1:8080/ardukeyotp/1.0/verify?otp=xxx&nonce=xxx&apiId=1000&hmac=xxx
+            ## Deligates request to ValidationRequest
+            validationRequest = ValidationRequest(requestParameters)
+            response = validationRequest.getResponse();
 
-            ## Output:
-            ## status, otp, nonce, datetime, hmac
-
-            try:
-
-                ## The OTP parameter
-                otp = requestParameters.get('otp', '')
-                otp = urllib.parse.quote(otp)
-
-                ## The given nonce
-                nonce = requestParameters.get('nonce', '')
-                nonce = urllib.parse.quote(nonce)
-
-                ## The given api id
-                apiId = requestParameters.get('apiId', 0)
-                apiId = urllib.parse.quote(apiId)
-
-                ## The HMAC hash
-                hmac = requestParameters.get('hash', '')
-                hmac = urllib.parse.quote(hmac)
-
-            except Exception as e:
-                pass
-            """
-
-
-
-
-            self.send_output(json.dumps(response, indent="  "))
+            ## Sends JSON fomratted response
+            self.send_output(json.dumps(response, indent=None, sort_keys=True))
 
         else:
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
-            self.send_output('<html><head><title>ArduKey authserver</title></head><body>')
-            self.send_output('<h1>ArduKey authserver</h1>')
+            self.send_output('<html><head><title>' + self.server_version + '</title></head><body>')
+            self.send_output('<h1>' + self.server_version + '</h1>')
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
             self.send_output('</body></html>')
 
