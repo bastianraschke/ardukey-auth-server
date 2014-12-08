@@ -116,7 +116,7 @@ class ValidationRequest(object):
         if ( publicId == None or encryptedToken == None ):
             raise ValueError('The OTP has an invalid format!')
 
-
+        database = SQLiteWrapper.getInstance()
 
         ## Query public id in database and get AES key and shared secret
         ## raise ValueError('The public id was not found in database!')
@@ -161,5 +161,3 @@ class ValidationRequest(object):
             self.__response['hmac'] = hmac.new(sharedSecret, msg=responseData, digestmod=hashlib.sha256).hexdigest()
 
         return self.__response
-
-database = SQLiteWrapper.getInstance()

@@ -8,6 +8,9 @@ Copyright 2014 Bastian Raschke.
 All rights reserved.
 """
 
+import sys
+sys.path.append('/usr/lib/ardukey-auth/')
+
 import http.server
 import urllib.parse
 import json

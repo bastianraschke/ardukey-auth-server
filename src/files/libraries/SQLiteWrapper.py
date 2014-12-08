@@ -36,7 +36,7 @@ class SQLiteWrapper(object):
 
     ## TODO
     ## databaseFile = '/var/ardukey-auth/ardukey-auth.sqlite'
-    databaseFile = os.path.dirname(os.path.realpath(__file__)) + '/ardukey-auth.sqlite'
+    databaseFile = os.path.dirname(os.path.realpath(__file__)) + '/../ardukey-auth.sqlite'
     connection = None
     cursor = None
 
@@ -81,7 +81,7 @@ class SQLiteWrapper(object):
 
         ## Checks if path/file is writable
         if ( os.access(self.databaseFile, os.W_OK) == False ):
-            raise Exception('The database file "' +self.databaseFile + '" is not writable!')
+            raise Exception('The database file "' + self.databaseFile + '" is not writable!')
 
         self.connection = sqlite3.connect(self.databaseFile)
         self.cursor = self.connection.cursor()
