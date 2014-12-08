@@ -2,24 +2,25 @@
 
 """
 ArduKey authserver
-@author Bastian Raschke, Philipp Meisberger
+@author Bastian Raschke
 
-Copyright 2014 Bastian Raschke, Philipp Meisberger.
+Copyright 2014 Bastian Raschke.
 All rights reserved.
 """
 
 import sqlite3
 import threading
 
-from classes.Config import *
 
-
-class Database(object):
+class SQLite3(object):
     """
     SQLite database wrapper class (multi thread usable).
 
     @attribute dict<Database> __instances
     Singleton instances.
+
+    @attribute string databaseFile
+    The file containing database.
 
     @attribute sqlite3.Connection connection
     The database connection.
@@ -29,6 +30,8 @@ class Database(object):
     """
 
     __instances = {}
+
+    databaseFile = '/var/ardukey-auth/ardukey-auth.sqlite'
     connection = None
     cursor = None
 
@@ -40,11 +43,11 @@ class Database(object):
         @return Database
         """
 
-        ## Gets current thread's id
+        ## Gets ID of current thread
         currentThreadID = threading.current_thread().ident
 
         if ( currentThreadID not in self.__instances ):
-            self.__instances[currentThreadID] = Database()
+            self.__instances[currentThreadID] = self.__class__.__name__()
 
         return self.__instances[currentThreadID]
 
@@ -71,13 +74,11 @@ class Database(object):
         @return void
         """
 
-        databaseFile = '/var/safehousepi/safehousepi.sqlite'
-
         ## Checks if path/file is writable
-        if ( os.access(databaseFile, os.W_OK) == False ):
-            raise Exception('The database file "' + databaseFile + '" is not writable!')
+        if ( os.access(self.databaseFile, os.W_OK) == False ):
+            raise Exception('The database file "' +self.databaseFile + '" is not writable!')
 
-        self.connection = sqlite3.connect(databaseFile)
+        self.connection = sqlite3.connect(self.databaseFile)
         self.cursor = self.connection.cursor()
 
     def disconnect(self):

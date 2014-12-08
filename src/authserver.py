@@ -8,13 +8,16 @@ Copyright 2014 Bastian Raschke.
 All rights reserved.
 """
 
-import libraries.AES
-##import libraries.SQLite3
-##import libraries.OTPValidation
-
-## See https://docs.python.org/3.3/library/http.server.html
 import http.server
 import urllib.parse
+import json
+import time
+import hmac
+import hashlib
+
+import libraries.AES
+import libraries.SQLite3
+import libraries.OTPValidation
 
 
 """
@@ -27,9 +30,6 @@ SERVER_ADDRESS = '127.0.0.1'
 
 ## The port the server is listening
 SERVER_PORT = 8080
-
-## The path to SQLite database file
-DATABASE_FILE = './database.sqlite'
 
 """
 Configuration section end
@@ -71,46 +71,76 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         @return void
         """
 
-        self.wfile.write(bytes(message, 'utf-8'))
+        self.wfile.write(message.encode('utf-8'))
 
     def do_GET(self):
 
         url = urllib.parse.urlparse(self.path, 'http')
 
+        ## Default request path
         if (url.path == '/ardukeyotp/1.0/verify'):
+
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
+
+
+
+            isoDateTime = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+            response = {}
+            response['otp'] = '1'
+            response['nonce'] = '2'
+            response['time'] = isoDateTime
+            response['status'] = 'MISSING_PARAMETER'
+
+
+            responseData = ''
+
+            for element in response.values():
+                responseData += element
+
+            response['hmac'] = hmac.new('secret'.encode('utf-8'), msg=responseData.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
+
+
+
+            """
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
-            ## TODO: receive parameters and validates them
-            ## TODO: if validation fails: send_response 500
-
             ## Input:
-            ## otp, nonce, apiId, hash
+            ## otp, nonce, apiId, hmac
+            ## eg.: http://127.0.0.1:8080/ardukeyotp/1.0/verify?otp=xxx&nonce=xxx&apiId=1000&hmac=xxx
 
             ## Output:
-            ## status, otp, nonce, datetime, hash
+            ## status, otp, nonce, datetime, hmac
 
-            ## The OTP parameter
-            otp = requestParameters.get('otp', '')
+            try:
 
-            ## The given nonce
-            nonce = requestParameters.get('nonce', '')
+                ## The OTP parameter
+                otp = requestParameters.get('otp', '')
+                otp = urllib.parse.quote(otp)
 
-            ## The given api id
-            apiId = requestParameters.get('apiId', 0)
+                ## The given nonce
+                nonce = requestParameters.get('nonce', '')
+                nonce = urllib.parse.quote(nonce)
 
-            ## The HMAC hash
-            hash = requestParameters.get('hash', 0)
+                ## The given api id
+                apiId = requestParameters.get('apiId', 0)
+                apiId = urllib.parse.quote(apiId)
+
+                ## The HMAC hash
+                hmac = requestParameters.get('hash', '')
+                hmac = urllib.parse.quote(hmac)
+
+            except Exception as e:
+                pass
+            """
 
 
 
 
-            self.send_output('Hallo Welt')
-
-
+            self.send_output(json.dumps(response, indent="  "))
 
         else:
             self.send_response(200)
@@ -123,14 +153,13 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_output('</body></html>')
 
 try:
-
     httpServer = http.server.HTTPServer((SERVER_ADDRESS, SERVER_PORT), ArduKeyAuthserver)
     print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + SERVER_ADDRESS + ':' + str(SERVER_PORT))
 
     httpServer.serve_forever()
 
 except KeyboardInterrupt:
-    print('KeyboardInterrupt received, shutting down the server.')
+    print('KeyboardInterrupt received, shutting down server...')
     httpServer.socket.close()
 
 ## Default exit

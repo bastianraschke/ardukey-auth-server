@@ -43,9 +43,9 @@ class OTPValidation(object):
         if ( re.search(otpRegex, otp) != None ):
             raise ValueError('The OTP has an invalid format!')
 
+        ## TODO: Check if re.group(n) != None
         self.__publicId = re.group(1)
         self.__token = re.group(2)
-
 
 
 
@@ -60,6 +60,6 @@ class OTPValidation(object):
 
         ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
 
-
+        ## check if pubid+secid matches in database
 
         return False
