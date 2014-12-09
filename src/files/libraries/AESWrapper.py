@@ -4,7 +4,7 @@
 ArduKey authserver
 @author Bastian Raschke
 
-Copyright 2014 Bastian Raschke.
+Copyright 2014 Bastian Raschke
 All rights reserved.
 """
 
@@ -12,9 +12,9 @@ import Crypto.Cipher.AES as AES
 import binascii
 
 
-class AES(object):
+class AESWrapper(object):
     """
-    AES crypto methods.
+    AES decryption wrapper class.
 
     @attribute string __aes
     The AES object.

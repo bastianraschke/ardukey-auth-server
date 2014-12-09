@@ -1,2 +1,1 @@
-- Modify Makefile template
 - receive parameters and validates them: if validation fails: send_response 500

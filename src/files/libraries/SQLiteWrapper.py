@@ -4,7 +4,7 @@
 ArduKey authserver
 @author Bastian Raschke
 
-Copyright 2014 Bastian Raschke.
+Copyright 2014 Bastian Raschke
 All rights reserved.
 """
 
@@ -13,6 +13,8 @@ import threading
 
 ## TODO
 import os
+
+#from libraries.Config import Config
 
 
 class SQLiteWrapper(object):

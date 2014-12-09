@@ -4,7 +4,7 @@
 ArduKey authserver
 @author Bastian Raschke
 
-Copyright 2014 Bastian Raschke.
+Copyright 2014 Bastian Raschke
 All rights reserved.
 """
 
@@ -15,13 +15,8 @@ import http.server
 import urllib.parse
 import json
 
-from libraries.ValidationRequest import ValidationRequest
+from libraries.Validation import Validation
 
-
-"""
-Configuration section
-
-"""
 
 ## TODO: Move to configuration file
 
@@ -30,10 +25,6 @@ SERVER_ADDRESS = '127.0.0.1'
 
 ## The port the server is listening
 SERVER_PORT = 8080
-
-"""
-Configuration section end
-"""
 
 ## Version of authserver
 __version__ = '1.0'
@@ -88,8 +79,8 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             ## Parses all query arguments to dictionary
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
-            ## Deligates request to ValidationRequest
-            validationRequest = ValidationRequest(requestParameters)
+            ## Deligates request to Validation class
+            validationRequest = Validation(requestParameters)
             response = validationRequest.getResponse();
 
             ## Sends JSON formatted response
@@ -113,7 +104,7 @@ try:
     httpServer.serve_forever()
 
 except KeyboardInterrupt:
-    print('KeyboardInterrupt received, shutting down server...')
+    print('KeyboardInterrupt received, shutting down ArduKey authserver...')
     httpServer.socket.close()
 
 ## Default exit

@@ -4,37 +4,38 @@
 ArduKey authserver
 @author Bastian Raschke
 
-Copyright 2014 Bastian Raschke.
+Copyright 2014 Bastian Raschke
 All rights reserved.
 """
 
 import time
-import hmac
-import hashlib
+import hmac, hashlib
 import urllib.parse
 import re
 
-from libraries.AES import AES
+from libraries.AESWrapper import AESWrapper
 from libraries.SQLiteWrapper import SQLiteWrapper
 
 
-class ValidationRequest(object):
+class Validation(object):
     """
-    Server response wrapper class.
+    OTP validation class.
 
-    @attribute string __response
-    The validation response.
+    @attribute string __sharedSecret
+    The shared secret of API user.
 
+    @attribute dict __response
+    The response dictionary - means the result of validation request.
     """
 
     __sharedSecret = None
     __response = {}
 
-    def __init__(self, requestParameters):
+    def __init__(self, request):
         """
         Constructor
 
-        @param string requestParameters The request query dictionary.
+        @param dict request The request query as dictionary.
         """
 
         isoDateTime = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -126,7 +127,7 @@ class ValidationRequest(object):
         aesKey = ''
         self.__sharedSecret = ''
 
-        aes = AES(aesKey)
+        aes = AESWrapper(aesKey)
         rawToken = aes.decrypt(encryptedToken)
 
         ## TODO: Check if secret id matches to pub id
