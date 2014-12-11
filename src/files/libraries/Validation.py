@@ -42,10 +42,10 @@ class Validation(object):
 
         try:
             ## Try to get request parameters
-            otp = urllib.parse.quote(requestParameters['otp'][0])
-            nonce = urllib.parse.quote(requestParameters['nonce'][0])
-            apiId = urllib.parse.quote(requestParameters['apiId'][0])
-            requestHMAC = urllib.parse.quote(requestParameters['hmac'][0])
+            otp = urllib.parse.quote(request['otp'][0])
+            nonce = urllib.parse.quote(request['nonce'][0])
+            apiId = urllib.parse.quote(request['apiId'][0])
+            requestHMAC = urllib.parse.quote(request['hmac'][0])
 
             ## TODO: Check hmac of request
 
