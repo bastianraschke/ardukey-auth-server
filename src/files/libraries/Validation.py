@@ -9,11 +9,11 @@ All rights reserved.
 """
 
 import time
-import hmac, hashlib
 import urllib.parse
 import re
 
 from libraries.AESWrapper import AESWrapper
+from libraries.DictionaryHmac import DictionaryHmac
 from libraries.SQLiteWrapper import SQLiteWrapper
 
 
@@ -28,7 +28,7 @@ class Validation(object):
     The response dictionary - means the result of validation request.
     """
 
-    __sharedSecret = None
+
     __response = {}
 
     def __init__(self, request):
@@ -136,6 +136,9 @@ class Validation(object):
 
         return False
 
+
+
+
     def getResponse(self):
         """
         Returns the complete response dictionary.
@@ -144,21 +147,14 @@ class Validation(object):
         """
 
         ## Unset old hmac
+        ## TODO: remove element from dict?
         self.__response['hmac'] = ''
 
         ## Only perform operation if shared secret is available
         if ( self.__sharedSecret != None ):
 
-            responseData = ''
-
-            ## Collect data to calculate hmac
-            for element in self.__response.values():
-                responseData += element
-
-            sharedSecret = self.__sharedSecret.encode('utf-8')
-            responseData = responseData.encode('utf-8')
-
             ## Calculate HMAC of current response
-            self.__response['hmac'] = hmac.new(sharedSecret, msg=responseData, digestmod=hashlib.sha256).hexdigest()
+            dictionaryHmac = DictionaryHmac(self.__response, self.__sharedSecret)
+            self.__response['hmac'] = dictionaryHmac.calculate()
 
         return self.__response
