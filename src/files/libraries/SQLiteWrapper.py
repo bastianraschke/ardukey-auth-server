@@ -10,22 +10,17 @@ All rights reserved.
 
 import sqlite3
 import threading
-
-## TODO
 import os
 
-#from libraries.Config import Config
+from libraries.ConfigurationFile import ConfigurationFile
 
 
 class SQLiteWrapper(object):
     """
-    SQLite 2 database wrapper class (multi thread usable).
+    SQLite database wrapper class (multi thread usable).
 
-    @attribute dict<Database> __instances
+    @attribute dict<self> __instances
     Singleton instances.
-
-    @attribute string databaseFile
-    The file containing database.
 
     @attribute sqlite3.Connection connection
     The database connection.
@@ -35,10 +30,6 @@ class SQLiteWrapper(object):
     """
 
     __instances = {}
-
-    ## TODO
-    ## databaseFile = '/var/ardukey-auth/ardukey-auth.sqlite'
-    databaseFile = os.path.dirname(os.path.realpath(__file__)) + '/../ardukey-auth.sqlite'
     connection = None
     cursor = None
 
@@ -81,11 +72,19 @@ class SQLiteWrapper(object):
         @return void
         """
 
-        ## Checks if path/file is writable
-        if ( os.access(self.databaseFile, os.W_OK) == False ):
-            raise Exception('The database file "' + self.databaseFile + '" is not writable!')
+        ## TODO: Path to file
+        configurationFilePath = './ardukey-auth.conf'
 
-        self.connection = sqlite3.connect(self.databaseFile)
+        ## Reads from configuration file
+        configuration = ConfigurationFile(configurationFilePath)
+
+        databaseFilePath = configuration.readString('Default', 'database_file')
+
+        ## Checks if path/file is writable
+        if ( os.access(databaseFilePath, os.W_OK) == False ):
+            raise Exception('The database file "' + databaseFilePath + '" is not writable!')
+
+        self.connection = sqlite3.connect(databaseFilePath)
         self.cursor = self.connection.cursor()
 
     def disconnect(self):

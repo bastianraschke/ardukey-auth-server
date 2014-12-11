@@ -15,16 +15,8 @@ import http.server
 import urllib.parse
 import json
 
-from libraries.Validation import Validation
-
-
-## TODO: Move to configuration file
-
-## The address the server is running on
-SERVER_ADDRESS = '127.0.0.1'
-
-## The port the server is listening
-SERVER_PORT = 8080
+from libraries.ConfigurationFile import ConfigurationFile
+from libraries.Verification import Verification
 
 ## Version of authserver
 __version__ = '1.0'
@@ -80,8 +72,8 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
             ## Deligates request to Validation class
-            validationRequest = Validation(requestParameters)
-            response = validationRequest.getResponse();
+            verification = Verification(requestParameters)
+            response = verification.getResponse();
 
             ## Sends JSON formatted response
             self.send_output(json.dumps(response, indent=None, sort_keys=True))
@@ -97,9 +89,26 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
             self.send_output('</body></html>')
 
+## TODO: Path to file
+configurationFilePath = './ardukey-auth.conf'
+
+## Reads from configuration file
+configuration = ConfigurationFile(configurationFilePath, readOnly=True)
+
 try:
-    httpServer = http.server.HTTPServer((SERVER_ADDRESS, SERVER_PORT), ArduKeyAuthserver)
-    print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + SERVER_ADDRESS + ':' + str(SERVER_PORT))
+    ## The address the server is running on
+    serverAddress = configuration.readString('Default', 'server_address')
+
+    ## The port the server is listening
+    serverPort = configuration.readInteger('Default', 'server_port')
+
+except:
+    print('The configuration file "' + configurationFilePath + '" could not be read correctly!')
+    exit(1)
+
+try:
+    httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
+    print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort))
 
     httpServer.serve_forever()
 

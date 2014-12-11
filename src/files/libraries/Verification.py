@@ -9,17 +9,17 @@ All rights reserved.
 """
 
 import time
-import hmac, hashlib
 import urllib.parse
 import re
 
 from libraries.AESWrapper import AESWrapper
+from libraries.DictionaryHmac import DictionaryHmac
 from libraries.SQLiteWrapper import SQLiteWrapper
 
 
-class Validation(object):
+class Verification(object):
     """
-    OTP validation class.
+    ArduKey OTP verification class.
 
     @attribute string __sharedSecret
     The shared secret of API user.
@@ -35,17 +35,21 @@ class Validation(object):
         """
         Constructor
 
-        @param dict request The request query as dictionary.
+        @param dict request
+        The request query as dictionary.
         """
 
         isoDateTime = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+        print(request)
 
         try:
             ## Try to get request parameters
             otp = urllib.parse.quote(request['otp'][0])
             nonce = urllib.parse.quote(request['nonce'][0])
             apiId = urllib.parse.quote(request['apiId'][0])
-            requestHMAC = urllib.parse.quote(request['hmac'][0])
+            requestHmac = urllib.parse.quote(request['hmac'][0])
 
             ## TODO: Check hmac of request
 
@@ -60,21 +64,21 @@ class Validation(object):
                 self.__response['otp'] = otp
                 self.__response['nonce'] = nonce
                 self.__response['time'] = isoDateTime
-                self.__response['status'] = 'FAILED'
+                self.__response['status'] = 'INVALID'
 
         ## The OTP has an invalid format
-        except ValueError as e:
-            self.__response['otp'] = otp
-            self.__response['nonce'] = nonce
-            self.__response['time'] = isoDateTime
-            self.__response['status'] = 'INVALID_OTP'
+        ## except ValueError as e:
+        ##     self.__response['otp'] = otp
+        ##     self.__response['nonce'] = nonce
+        ##     self.__response['time'] = isoDateTime
+        ##     self.__response['status'] = 'CURRUPTED'
 
         ## The request signature (HMAC) failed
         ## except SignatureError as e:
         ##     self.__response['otp'] = otp
         ##     self.__response['nonce'] = nonce
         ##     self.__response['time'] = isoDateTime
-        ##     self.__response['status'] = 'INVALID_SIGNATURE'
+        ##     self.__response['status'] = 'BAD_SIGNATURE'
 
         ## Some parameters are not okay:
         except KeyError as e:
@@ -94,7 +98,9 @@ class Validation(object):
         """
         Validates the OTP.
 
-        @param string otp The OTP to validate.
+        @param string otp
+        The OTP to validate.
+
         @return boolean
         """
 
@@ -102,29 +108,39 @@ class Validation(object):
 
         ## Pre-regex length check
         if ( otpLength != 44 ):
-            raise ValueError('The OTP is too short or long!')
+            raise ValueError('The OTP has an invalid length!')
 
         otpRegex = '^([cbdefghijklnrtuv]{12})([cbdefghijklnrtuv]{32})$'
+        regexSearch = re.search(otpRegex, otp)
 
         ## Regex general format check
-        if ( re.search(otpRegex, otp) == None ):
+        if ( regexSearch == None ):
             raise ValueError('The OTP has an invalid format!')
 
-        publicId = re.group(1)
-        encryptedToken = re.group(2)
+        ## Try to extract public id and token from OTP
+        try:
+            publicId = regexSearch.group(1)
+            encryptedToken = regexSearch.group(2)
 
-        ## Regex elements format check
-        if ( publicId == None or encryptedToken == None ):
-            raise ValueError('The OTP has an invalid format!')
+        except:
+            raise ValueError('The OTP does not contain public id or token!')
+
+        ## TODO: unmodhex
 
         database = SQLiteWrapper.getInstance()
 
-        ## Query public id in database and get AES key and shared secret
-        ## raise ValueError('The public id was not found in database!')
-        ## raise ValueError('The ArduKey has been revoked!')
+        ## Query publicid, secretid, counter, timestamp in database and get AES key and shared secret
+        ## raise Exception('The public id was not found in database!')
+        ## raise Exception('The ArduKey has been revoked!')
         ## TODO
 
-        aesKey = ''
+        """
+        SELECT secretid, counter, timestamp, aesKey
+        FROM ardukeyotp
+        WHERE publicid = ?
+        """
+
+        aesKey = '7A1858592FCB76BD5EB2685421AED45E'
         self.__sharedSecret = ''
 
         aes = AESWrapper(aesKey)
@@ -138,27 +154,20 @@ class Validation(object):
 
     def getResponse(self):
         """
-        Returns the complete response dictionary.
+        Returns the complete response.
 
         @return dictionary
         """
 
         ## Unset old hmac
+        ## TODO: remove element from dict?
         self.__response['hmac'] = ''
 
         ## Only perform operation if shared secret is available
         if ( self.__sharedSecret != None ):
 
-            responseData = ''
-
-            ## Collect data to calculate hmac
-            for element in self.__response.values():
-                responseData += element
-
-            sharedSecret = self.__sharedSecret.encode('utf-8')
-            responseData = responseData.encode('utf-8')
-
             ## Calculate HMAC of current response
-            self.__response['hmac'] = hmac.new(sharedSecret, msg=responseData, digestmod=hashlib.sha256).hexdigest()
+            dictionaryHmac = DictionaryHmac(self.__response, self.__sharedSecret)
+            self.__response['hmac'] = dictionaryHmac.calculate()
 
         return self.__response
