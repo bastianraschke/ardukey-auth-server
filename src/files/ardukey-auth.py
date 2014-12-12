@@ -8,15 +8,15 @@ Copyright 2014 Bastian Raschke
 All rights reserved.
 """
 
-import sys
-sys.path.append('/usr/lib/ardukey-auth/')
-
 import http.server
 import urllib.parse
 import json
 
+import sys
+sys.path.append('/usr/lib/ardukey-auth/')
+
 from libraries.ConfigurationFile import ConfigurationFile
-from libraries.Verification import Verification
+from libraries.ArduKeyVerification import ArduKeyVerification
 
 ## Version of authserver
 __version__ = '1.0'
@@ -72,11 +72,11 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
             ## Deligates request to Validation class
-            verification = Verification(requestParameters)
+            verification = ArduKeyVerification(requestParameters)
             response = verification.getResponse();
 
             ## Sends JSON formatted response
-            self.send_output(json.dumps(response, indent=None, sort_keys=True))
+            self.send_output(json.dumps(response, indent='\t', sort_keys=True))
 
         else:
             self.send_response(200)

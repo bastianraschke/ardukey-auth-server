@@ -42,12 +42,12 @@ class SQLiteWrapper(object):
         """
 
         ## Gets ID of current thread
-        currentThreadID = threading.current_thread().ident
+        currentThreadId = threading.current_thread().ident
 
-        if ( currentThreadID not in self.__instances ):
-            self.__instances[currentThreadID] = self()
+        if ( currentThreadId not in self.__instances ):
+            self.__instances[currentThreadId] = self()
 
-        return self.__instances[currentThreadID]
+        return self.__instances[currentThreadId]
 
     def __init__(self):
         """
