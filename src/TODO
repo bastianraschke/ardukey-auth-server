@@ -1,1 +1,1 @@
-- receive parameters and validates them: if validation fails: send_response 500
+- config file writer: do not write everytime
