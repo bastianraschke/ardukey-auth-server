@@ -101,6 +101,14 @@ class ArduKeyVerification(object):
         return modhexData
 
     def __validateRequest(self, request):
+        """
+        Validates a given request.
+
+        @param dict request
+        The request to validate.
+
+        @return void
+        """
 
         try:
             ## Try to get request parameters
@@ -116,16 +124,19 @@ class ArduKeyVerification(object):
 
 
             ## Get shared secret to verify request Hmac
-            SQLiteWrapper.getInstance().cursor.execute('SELECT secret FROM API WHERE id=?', [
-                apiId,
-            ])
+            SQLiteWrapper.getInstance().cursor.execute(
+                'SELECT secret FROM API WHERE id=?',
+                [
+                    apiId,
+                ]
+            )
 
             rows = SQLiteWrapper.getInstance().cursor.fetchall()
 
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIKeyAvailableError('No API key available for Hmac signature check!')
+                raise NoAPIKeyAvailableError('No API key found in database!')
 
             request = {}
             request['otp'] = otp
@@ -153,13 +164,13 @@ class ArduKeyVerification(object):
             else:
                 self.__response['otp'] = otp
                 self.__response['nonce'] = nonce
-                self.__response['status'] = 'INVALID'
+                self.__response['status'] = 'INVALID_OTP'
 
         ## The OTP has an invalid format
         ## except ValueError:
         ##     self.__response['otp'] = otp
         ##     self.__response['nonce'] = nonce
-        ##     self.__response['status'] = 'CURRUPTED'
+        ##     self.__response['status'] = 'CURRUPTED_OTP'
 
         ## The API key was not found
         except NoAPIKeyAvailableError:
@@ -171,7 +182,7 @@ class ArduKeyVerification(object):
         except BadHmacSignatureError:
             self.__response['otp'] = otp
             self.__response['nonce'] = nonce
-            self.__response['status'] = 'BAD_SIGNATURE'
+            self.__response['status'] = 'INVALID_SIGNATURE'
 
         ## Some parameters are not okay:
         except KeyError:
@@ -220,25 +231,40 @@ class ArduKeyVerification(object):
         publicId = self.__convertModHex(publicId)
         encryptedToken = self.__convertModHex(encryptedToken)
 
-        ## Gets database object instance
-        database = SQLiteWrapper.getInstance()
 
-        ## Query publicid, secretid, counter, timestamp in database and get AES key and shared secret
-        ## raise Exception('The public id was not found in database!')
-        ## raise Exception('The ArduKey has been revoked!')
-        ## TODO
+        ## Get needed information from database
+        SQLiteWrapper.getInstance().cursor.execute(
+            'SELECT publicid, secretid, counter, timestamp, aeskey, status FROM OTP WHERE publicid=?',
+            [
+                publicId,
+            ]
+        )
 
-        """
-        SELECT secretid, counter, timestamp, aesKey
-        FROM ardukeyotp
-        WHERE publicid = ?
-        """
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
 
-        aesKey = '7A1858592FCB76BD5EB2685421AED45E'
-        self.__sharedSecret = ''
+        if ( len(rows) > 0 ):
+            secretId = rows[0][0]
+            oldCounter = rows[0][1]
+            oldTimestamp = rows[0][2]
+            aesKey = rows[0][3]
+            status = rows[0][4]
+        else:
+            ## No OTP found in database
+            return False
+
+        ## Check status of ArduKey (maybe it is revoked)
+        if ( status != 1 ):
+            return False
 
         aes = AESWrapper(aesKey)
         rawToken = aes.decrypt(encryptedToken)
+
+        ## TODO
+        ## check if aes error occured?
+
+        ## TODO
+        ## Checks if database secretid matches to OTP value
+        ## if ()
 
         ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
 
