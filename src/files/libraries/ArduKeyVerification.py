@@ -79,7 +79,7 @@ class ArduKeyVerification(object):
 
         ## Sort dictionary by key, to calculate the same Hmac always
         for k in sorted(data):
-            payloadData += data[k]
+            payloadData += str(data[k])
 
         sharedSecret = self.__sharedSecret.encode('utf-8')
         payloadData = payloadData.encode('utf-8')
@@ -96,6 +96,9 @@ class ArduKeyVerification(object):
 
         @return string
         """
+
+        ## Convert data to lowercase
+        data = data.lower()
 
         ## Hexadecimal table
         hexTable = '0123456789abcdef'
