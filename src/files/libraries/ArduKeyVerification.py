@@ -55,112 +55,36 @@ class ArduKeyVerification(object):
         The request query as dictionary.
         """
 
-        self.__validateRequest(request)
+        self.__processRequest(request)
 
-    def __calculateHmac(self, data):
-        """
-        Calculates a hexadecimal Hmac of given data dictionary.
-
-        @param dict data
-        The dictionary that contains data.
-
-        @return string
-        """
-
-        ## Only process dictionaries
-        if ( type(data) != dict ):
-            raise ValueError('The given data is not a dictionary!')
-
-        ## Checks if shared secret is given
-        if ( len(self.__sharedSecret) == 0 ):
-            raise ValueError('No shared secret given!')
-
-        payloadData = ''
-
-        ## Sort dictionary by key, to calculate the same Hmac always
-        for k in sorted(data):
-            payloadData += data[k]
-
-        sharedSecret = self.__sharedSecret.encode('utf-8')
-        payloadData = payloadData.encode('utf-8')
-
-        ## Calculate HMAC of current response
-        return hmac.new(sharedSecret, msg=payloadData, digestmod=hashlib.sha256).hexdigest()
-
-    def __decodeArduHex(self, data):
-        """
-        Converts a arduhex input string to hexadecimal string.
-
-        @param string data
-        The arduhex string to convert.
-
-        @return string
-        """
-
-        ## Hexadecimal table
-        hexTable = '0123456789abcdef'
-
-        ## TODO: Own table
-        ## ArduKey transformation table
-        arduhexMappingTable = 'cbdefghijklnrtuv'
-
-        result = ''
-
-        for i in range(0, len(data)):
-
-            position = arduhexMappingTable.find(data[i])
-
-            ## Checks if character was found
-            if ( position == -1 ):
-                raise ValueError('The given input contains a non-valid character!')
-            else:
-                result += hexTable[position]
-
-        return result
-
-    def __calculateCRC16(self, data):
-        """
-        Calculates the CRC16 checksum for given data.
-
-        @param string data
-        The data used for calculation.
-
-        @return string
-        """
-
-        return 'TODO'
-
-    def __validateRequest(self, request):
+    def __processRequest(self, request):
         """
         Validates a given request.
 
         @param dict request
-        The request to validate.
+        The request to process.
 
         @return void
         """
 
         try:
             ## Try to get request parameters
-            otp = urllib.parse.quote(request['otp'][0])
-            nonce = urllib.parse.quote(request['nonce'][0])
-            apiId = urllib.parse.quote(request['apiId'][0])
-            requestHmac = urllib.parse.quote(request['hmac'][0])
+            receivedRequest = {}
+            receivedRequest['otp'] = urllib.parse.quote(request['otp'][0])
+            receivedRequest['nonce'] = urllib.parse.quote(request['nonce'][0])
+            receivedRequest['apiId'] = urllib.parse.quote(request['apiId'][0])
 
+            ## Do not insert request Hmac to request dictionary, to exclude it from Hmac calculation
+            receivedRequestHmac = urllib.parse.quote(request['hmac'][0])
 
-            self.__response['otp'] = otp
-            self.__response['nonce'] = nonce
+            ## Simply send OTP and nonce back to requester
+            self.__response['otp'] = receivedRequest['otp']
+            self.__response['nonce'] = receivedRequest['nonce']
 
-            request = {}
-            request['otp'] = otp
-            request['nonce'] = nonce
-            request['apiId'] = apiId
-
-
-            ## Get shared secret of API Id to verify request
+            ## Get shared secret of given API id
             SQLiteWrapper.getInstance().cursor.execute(
                 'SELECT secret FROM API WHERE id = ?', [
-                apiId,
+                receivedRequest['apiId'],
             ])
 
             rows = SQLiteWrapper.getInstance().cursor.fetchall()
@@ -170,18 +94,17 @@ class ArduKeyVerification(object):
             else:
                 raise NoAPIIdAvailableError('The API id was not found in database!')
 
-
-
-            calculatedRequestHmac = self.__calculateHmac(request)
+            ## Calculates Hmac of request to verify authenticity
+            calculatedRequestHmac = self.__calculateHmac(receivedRequest)
             print('DEBUG: calculatedRequestHmac = ' + calculatedRequestHmac)
 
-            ## Compare hashes
-            ## Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
-            if ( requestHmac != calculatedRequestHmac ):
+            ## Compare request Hmac hashes
+            ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
+            if ( receivedRequestHmac != calculatedRequestHmac ):
                 raise BadHmacSignatureError('The request Hmac signature is invalid!')
 
-            ## Try to validate OTP
-            if ( self.__validateOTP(otp) == True ):
+            ## Try to verity OTP
+            if ( self.__verifyOTP(receivedRequest['otp']) == True ):
                 self.__response['status'] = 'OK'
 
             else:
@@ -203,11 +126,100 @@ class ArduKeyVerification(object):
             ## Some parameters are not okay
             self.__response['status'] = 'MISSING_PARAMETER'
 
-        ## General errors
         ## except:
+        ##     ## General errors
         ##     self.__response['status'] = 'UNKNOWN_ERROR'
 
-    def __validateOTP(self, otp):
+    def __calculateHmac(self, data):
+        """
+        Calculates Hmac of given dictionary and returns it as a hexadecimal string.
+
+        @param dict data
+        The dictionary that contains data.
+
+        @return string
+        """
+
+        ## Only process dictionaries
+        if ( type(data) != dict ):
+            raise ValueError('The given data is not a dictionary!')
+
+        ## Checks if shared secret is given
+        if ( len(self.__sharedSecret) == 0 ):
+            raise ValueError('No shared secret given!')
+
+        dataString = ''
+
+        ## Sort dictionary by key, to calculate the same Hmac always
+        for k in sorted(data):
+            dataString += str(data[k])
+
+        sharedSecret = self.__sharedSecret.encode('utf-8')
+        dataString = dataString.encode('utf-8')
+
+        ## Calculate Hmac of payload
+        return hmac.new(sharedSecret, msg=dataString, digestmod=hashlib.sha256).hexdigest()
+
+    def __decodeArduHex(self, arduhexString):
+        """
+        Converts a given arduhex string to hexadecimal string.
+
+        @param string arduhexString
+        The arduhex string to convert.
+
+        @return string
+        """
+
+        ## Convert input string to lowercase
+        arduhexString = arduhexString.lower()
+
+        ## Hexadecimal table
+        hexTable = '0123456789abcdef'
+
+        ## TODO: Own table
+        ## ArduKey transformation table
+        arduhexTable = 'cbdefghijklnrtuv'
+
+        result = ''
+
+        for i in range(0, len(arduhexString)):
+
+            position = arduhexTable.find(arduhexString[i])
+
+            ## Checks if character was found
+            if ( position == -1 ):
+                raise ValueError('The given input contains a non-valid character!')
+            else:
+                result += hexTable[position]
+
+        return result
+
+    def __calculateCRC16(self, hexString):
+        """
+        Calculates the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
+
+        @param string hexString
+        The hexadecimal string used by calculation.
+
+        @return string TODO
+        """
+
+        crc = 0xFFFF
+
+        for i in range(0, len(hexString)):
+
+            index = i*2
+            currentByte = int(hexString[index:index+2], 16)
+
+            x = (crc >> 8) ^ currentByte
+            x = x ^ (x >> 4)
+
+            crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
+            crc = crc & 0xFFFF
+
+        return crc
+
+    def __verifyOTP(self, otp):
         """
         Validates the OTP.
 
@@ -219,7 +231,7 @@ class ArduKeyVerification(object):
 
         otpLength = len(otp)
 
-        ## Pre-regex length check
+        ## Pre-Regex length check
         if ( otpLength != 44 ):
             raise ValueError('The OTP has an invalid length!')
 
@@ -238,13 +250,13 @@ class ArduKeyVerification(object):
         except:
             raise ValueError('The OTP does not contain public id or token!')
 
-        ## Convert public id and token to default hexadecimal string representation
+        ## Convert public id and encrypted token to default hexadecimal string representation
         publicId = self.__decodeArduHex(publicId)
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
-        ## Get needed information from database
+        ## Get required information from database
         SQLiteWrapper.getInstance().cursor.execute(
-            'SELECT secretid, counter, timestamp, aeskey, status FROM OTP WHERE publicid = ?', [
+            'SELECT secretid, sessioncounter, counter, timestamp, aeskey, status FROM OTP WHERE publicid = ?', [
             publicId,
         ])
 
@@ -253,34 +265,47 @@ class ArduKeyVerification(object):
         if ( len(rows) > 0 ):
             secretId = rows[0][0]
             oldCounter = int(rows[0][1])
-            oldTimestamp = int(rows[0][2])
-            aesKey = rows[0][3]
-            status = int(rows[0][4])
+            oldSessionCounter = int(rows[0][2])
+            oldTimestamp = int(rows[0][3])
+            aesKey = rows[0][4]
+            status = int(rows[0][5])
         else:
             print('DEBUG: No OTP found in database')
-            ## No OTP found in database
             return False
 
-        ## Check status of ArduKey (maybe it is revoked)
+        ## Check if ArduKey is disabled (revoked, ...)
         if ( status == 0 ):
-            print('DEBUG: OTP has been revoked!')
-            ## The ArduKey has been revoked!
+            print('DEBUG: The ArduKey has been disabled!')
             return False
 
         ## Decrypt encrypted token
-        rawToken = AESWrapper(aesKey).decrypt(encryptedToken)
+        decryptedToken = AESWrapper(aesKey).decrypt(encryptedToken)
+        print('DEBUG: decryptedToken = ' + str(decryptedToken))
 
-        print('DEBUG: rawToken = ' + str(rawToken))
-
-        ## TODO: CRC16 check
+        ## Example token: b0d4a2d69bc4 2000 04 07004f 9899 d99a
+        ## b0d4a2d69bc420000407004f9899d99a
 
         ## TODO
-        ## Checks if database secretid matches to OTP value
-        ## if ()
+        token = {}
+        token['secretId'] = decryptedToken[0:12+1]
+        token['sessionCounter'] = int(decryptedToken[28:32+1], 16)
+        token['counter'] = int(decryptedToken[28:32+1], 16)
+        token['timestamp'] = int(decryptedToken[28:32+1], 16)
+        token['crc'] = int(decryptedToken[28:32+1], 16)
 
-        ## rawtoken: b0d4a2d69bc4 2000 04 07004f 9899 d99a
+        ## Calculate CRC16 checksum of token
+        calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
 
-        ## TODO: Check if secret id matches to pub id
+        ## Compare the OTP and calculated checksum
+        if ( token['crc'] != calculatedCRC ):
+            print('DEBUG: The CRC checksum of OTP is not correct!')
+            return False
+
+        ## Checks if database secretid matches to value in OTP
+        if ( token['secretId'] != secretId ):
+            print('DEBUG: The secret id is not the same as in database!')
+            return False
+
         ## TODO: Check counter value
         ## TODO: Check timestamp
 

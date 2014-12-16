@@ -1,6 +1,7 @@
 CREATE TABLE API
   ( id NUMBER (11) NOT NULL , 
     secret NUMBER (64) NOT NULL,
+    status NUMBER (1) NOT NULL,
     PRIMARY KEY ( id )
   ) ;
 
