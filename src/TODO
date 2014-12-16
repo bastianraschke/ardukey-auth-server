@@ -1,2 +1,3 @@
 - config file writer: do not write everytime
 - CRC16 C++ vs. Python tests
+- database: rename "status" to "enabled"

@@ -22,11 +22,13 @@ install:
 	install -D --mode 644 files/ardukey-auth.conf $(DESTDIR)$(etcprefix)/ardukey-auth.conf
 
 	install -D --mode 644 files/libraries/__init__.py $(DESTDIR)$(libprefix)/__init__.py
-	install -D --mode 644 files/libraries/AES.py $(DESTDIR)$(libprefix)/AES.py
+	install -D --mode 644 files/libraries/AESWrapper.py $(DESTDIR)$(libprefix)/AESWrapper.py
 	install -D --mode 644 files/libraries/SQLiteWrapper.py $(DESTDIR)$(libprefix)/SQLiteWrapper.py
-	install -D --mode 644 files/libraries/ValidationRequest.py $(DESTDIR)$(libprefix)/ValidationRequest.py
+	install -D --mode 644 files/libraries/ArduKeyVerification.py $(DESTDIR)$(libprefix)/ArduKeyVerification.py
+	install -D --mode 644 files/libraries/ConfigurationFile.py $(DESTDIR)$(libprefix)/ConfigurationFile.py
 
-	install -D --mode 755 files/ardukey-auth.py $(DESTDIR)$(sbinprefix)/ardukey-auth
+	install -D --mode 755 files/ardukey-auth.py $(DESTDIR)$(sbinprefix)/ardukey-auth.py
+	## TODO: make executable
 
 	install -D --mode 644 files/ardukey-auth.sqlite $(DESTDIR)$(varprefix)/ardukey-auth.sqlite
 

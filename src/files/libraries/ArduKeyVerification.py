@@ -47,21 +47,21 @@ class ArduKeyVerification(object):
     __sharedSecret = ''
     __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
-    def __init__(self, request):
+    def __init__(self, requestQuery):
         """
         Constructor
 
-        @param dict request
+        @param dict requestQuery
         The request query as dictionary.
         """
 
         self.__processRequest(request)
 
-    def __processRequest(self, request):
+    def __processRequest(self, requestQuery):
         """
         Validates a given request.
 
-        @param dict request
+        @param dict requestQuery
         The request to process.
 
         @return void
@@ -69,22 +69,22 @@ class ArduKeyVerification(object):
 
         try:
             ## Try to get request parameters
-            receivedRequest = {}
-            receivedRequest['otp'] = urllib.parse.quote(request['otp'][0])
-            receivedRequest['nonce'] = urllib.parse.quote(request['nonce'][0])
-            receivedRequest['apiId'] = urllib.parse.quote(request['apiId'][0])
+            request = {}
+            request['otp'] = urllib.parse.quote(requestQuery['otp'][0])
+            request['nonce'] = urllib.parse.quote(requestQuery['nonce'][0])
+            request['apiId'] = urllib.parse.quote(requestQuery['apiId'][0])
 
             ## Do not insert request Hmac to request dictionary, to exclude it from Hmac calculation
-            receivedRequestHmac = urllib.parse.quote(request['hmac'][0])
+            requestHmac = urllib.parse.quote(requestQuery['hmac'][0])
 
             ## Simply send OTP and nonce back to requester
-            self.__response['otp'] = receivedRequest['otp']
-            self.__response['nonce'] = receivedRequest['nonce']
+            self.__response['otp'] = request['otp']
+            self.__response['nonce'] = request['nonce']
 
             ## Get shared secret of given API id
             SQLiteWrapper.getInstance().cursor.execute(
                 'SELECT secret FROM API WHERE id = ?', [
-                receivedRequest['apiId'],
+                request['apiId'],
             ])
 
             rows = SQLiteWrapper.getInstance().cursor.fetchall()
@@ -95,16 +95,16 @@ class ArduKeyVerification(object):
                 raise NoAPIIdAvailableError('The API id was not found in database!')
 
             ## Calculates Hmac of request to verify authenticity
-            calculatedRequestHmac = self.__calculateHmac(receivedRequest)
+            calculatedRequestHmac = self.__calculateHmac(request)
             print('DEBUG: calculatedRequestHmac = ' + calculatedRequestHmac)
 
             ## Compare request Hmac hashes
             ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
-            if ( receivedRequestHmac != calculatedRequestHmac ):
+            if ( requestHmac != calculatedRequestHmac ):
                 raise BadHmacSignatureError('The request Hmac signature is invalid!')
 
             ## Try to verity OTP
-            if ( self.__verifyOTP(receivedRequest['otp']) == True ):
+            if ( self.__verifyOTP(request['otp']) == True ):
                 self.__response['status'] = 'OK'
 
             else:
@@ -169,6 +169,8 @@ class ArduKeyVerification(object):
 
         @return string
         """
+
+        ## TODO
 
         ## Convert input string to lowercase
         arduhexString = arduhexString.lower()
@@ -323,7 +325,7 @@ class ArduKeyVerification(object):
 
         ## Unset old hmac
         ## Important: Do not remove element, cause if no Hmac signature is possible,
-        ## the element always must be available in response!
+        ## the element must be available in response nevertheless!
         self.__response['hmac'] = ''
 
         ## Only perform operation if shared secret is available
