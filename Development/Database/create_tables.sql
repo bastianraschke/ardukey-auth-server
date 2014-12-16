@@ -1,7 +1,7 @@
 CREATE TABLE API
   ( id NUMBER (11) NOT NULL , 
     secret NUMBER (64) NOT NULL,
-    status NUMBER (1) NOT NULL,
+    enabled NUMBER (1) NOT NULL,
     PRIMARY KEY ( id )
   ) ;
 
@@ -14,6 +14,6 @@ CREATE TABLE OTP
     timestamp      NUMBER (8) ,
     aeskey         VARCHAR2 (32) NOT NULL ,
     created        DATE ,
-    status         NUMBER (1) NOT NULL ,
+    enabled         NUMBER (1) NOT NULL ,
     PRIMARY KEY ( publicid )
   ) ;
