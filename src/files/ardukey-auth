@@ -19,7 +19,15 @@ PIDFILE="/var/run/ardukey-auth.pid"
 case "${1}" in
 
     start)
-        log_daemon_msg "Starting ArduKey authentication service" "${NAME}"
+        log_daemon_msg "Starting ArduKey authentication server" "${NAME}"
+
+        ## Ensure service is not already running
+        if ( test -f "${PIDFILE}" ); then
+           log_end_msg 1
+           log_failure_msg "${NAME} is already running"
+           exit 1
+        fi
+
         start-stop-daemon --start --make-pidfile --pidfile "${PIDFILE}" --background --exec "${DAEMON}"
 
         if ( test "${?}" = 0 ); then
@@ -32,8 +40,9 @@ case "${1}" in
     ;;
 
     stop)
-        log_daemon_msg "Stopping ArduKey authentication service" "${NAME}"
+        log_daemon_msg "Stopping ArduKey authentication server" "${NAME}"
 
+        ## Ensure service is running
         if ( ! test -f "${PIDFILE}" ); then
            log_end_msg 1
            log_failure_msg "${NAME} is not running"
