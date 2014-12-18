@@ -1,26 +1,27 @@
-"""
-function crc16($data)
- {
-   $crc = 0xFFFF;
-   for ($i = 0; $i < strlen($data); $i++)
-   {
-     $x = (($crc >> 8) ^ ord($data[$i])) & 0xFF;
-     $x ^= $x >> 4;
-     $crc = (($crc << 8) ^ ($x << 12) ^ ($x << 5) ^ $x) & 0xFFFF;
-   }
-   return $crc;
- }
- """
+def __calculateCRC16(self, hexString):
+    """
+    Calculates the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
 
-def crc16(data, length):
+    @param string hexString
+    The hexadecimal string used by calculation.
+
+    @return integer
+    """
+
+    hexStringLength = len(hexString)
+
+    if ( hexStringLength % 2 != 0 ):
+        raise ValueError('The given hexadecimal string is not valid!')
+
+    ## The count of bytes in hexadecimal string
+    byteCount = hexStringLength / 2
 
     crc = 0xFFFF
 
-    for i in range(0, length):
+    for i in range(0, byteCount):
 
-        #index = i*2
-        #currentByte = int(data[index:index+2], 16)
-        currentByte = ord(data[i])
+        index = i*2
+        currentByte = int(hexString[index:index+2], 16)
 
         x = (crc >> 8) ^ currentByte
         x = x ^ (x >> 4)
@@ -30,8 +31,4 @@ def crc16(data, length):
 
     return crc
 
-#test = b'ff'
-#print(crc16(test, len(test) / 2))
-
-test = "Hallo\0"
-print(crc16(test, len(test)))
+print(__calculateCRC16(None, 'b0d4a2d69bc427000000002ba1c3'))

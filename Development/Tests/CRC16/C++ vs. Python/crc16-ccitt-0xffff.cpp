@@ -40,6 +40,6 @@ int main(int argc, char** argv)
     //uint8_t* values = &test;
     //cout << crc16(values, 1) << endl;
 
-    uint8_t values[6] = "Hallo";
+    uint8_t values[14] = {0xb0, 0xd4, 0xa2, 0xd6, 0x9b, 0xc4, 0x27, 0x00, 0x00, 0x00, 0x00, 0x2b, 0xa1, 0xc3};
     cout << crc16(values, sizeof(values)) << endl;
 }

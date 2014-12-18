@@ -52,4 +52,4 @@ class AESWrapper(object):
         cipherBytes = binascii.unhexlify(cipher.encode('utf-8'))
         plainBytes = self.__aes.decrypt(cipherBytes)
 
-        return binascii.hexlify(plainBytes)
+        return binascii.hexlify(plainBytes).decode('utf-8')

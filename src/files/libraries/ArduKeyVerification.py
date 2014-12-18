@@ -55,7 +55,7 @@ class ArduKeyVerification(object):
         The request query as dictionary.
         """
 
-        self.__processRequest(request)
+        self.__processRequest(requestQuery)
 
     def __processRequest(self, requestQuery):
         """
@@ -83,7 +83,7 @@ class ArduKeyVerification(object):
 
             ## Get shared secret of given API id
             SQLiteWrapper.getInstance().cursor.execute(
-                'SELECT secret FROM API WHERE id = ?', [
+                'SELECT secret FROM API WHERE id = ? AND enabled = 1', [
                 request['apiId'],
             ])
 
@@ -92,7 +92,7 @@ class ArduKeyVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIIdAvailableError('The API id was not found in database!')
+                raise NoAPIIdAvailableError('No valid API id found in database!')
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
@@ -203,12 +203,20 @@ class ArduKeyVerification(object):
         @param string hexString
         The hexadecimal string used by calculation.
 
-        @return string TODO
+        @return integer
         """
+
+        hexStringLength = len(hexString)
+
+        if ( hexStringLength % 2 != 0 ):
+            raise ValueError('The given hexadecimal string is not valid!')
+
+        ## The count of bytes in hexadecimal string
+        byteCount = int(hexStringLength / 2)
 
         crc = 0xFFFF
 
-        for i in range(0, len(hexString)):
+        for i in range(0, byteCount):
 
             index = i*2
             currentByte = int(hexString[index:index+2], 16)
@@ -256,44 +264,48 @@ class ArduKeyVerification(object):
         publicId = self.__decodeArduHex(publicId)
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
-        ## Get required information from database
-        SQLiteWrapper.getInstance().cursor.execute(
-            'SELECT secretid, sessioncounter, counter, timestamp, aeskey, status FROM OTP WHERE publicid = ?', [
-            publicId,
-        ])
+        ## Try to get required information from database
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                'SELECT secretid, counter, sessioncounter, timestamp, aeskey FROM ARDUKEY WHERE publicid = ? AND enabled = 1', [
+                publicId,
+            ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
 
+        except Exception as e:
+            print('DEBUG: Error occured while database operation: ' + str(e))
+            return False
+
+        ## TODO: In previous exception block?
         if ( len(rows) > 0 ):
-            secretId = rows[0][0]
+            secretId = rows[0][0].lower()
             oldCounter = int(rows[0][1])
             oldSessionCounter = int(rows[0][2])
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
-            status = int(rows[0][5])
         else:
-            print('DEBUG: No OTP found in database')
-            return False
-
-        ## Check if ArduKey is disabled (revoked, ...)
-        if ( status == 0 ):
-            print('DEBUG: The ArduKey has been disabled!')
+            print('DEBUG: No valid ArduKey found in database!')
             return False
 
         ## Decrypt encrypted token
         decryptedToken = AESWrapper(aesKey).decrypt(encryptedToken)
-        print('DEBUG: decryptedToken = ' + str(decryptedToken))
+        print('DEBUG: decryptedToken = ' + decryptedToken)
 
-        ## Example token: b0d4a2d69bc4 2000 04 07004f 9899 d99a
-        ## b0d4a2d69bc420000407004f9899d99a
-
-        ## TODO
+        ## TODO: Big/Little endian description
         token = {}
-        token['secretId'] = decryptedToken[0:12+1]
-        token['sessionCounter'] = int(decryptedToken[28:32+1], 16)
-        token['counter'] = int(decryptedToken[28:32+1], 16)
-        token['timestamp'] = int(decryptedToken[28:32+1], 16)
-        token['crc'] = int(decryptedToken[28:32+1], 16)
+        token['secretId'] = decryptedToken[0:12]
+        token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
+        token['sessionCounter'] = int(decryptedToken[16:18], 16)
+
+        token['timestamp'] = int(decryptedToken[18:20] + decryptedToken[20:22] + decryptedToken[22:24], 16)
+        token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
+
+        print('secretId = ' + token['secretId'])
+        print('sessionCounter = ' + hex(token['sessionCounter']))
+        print('counter = ' + hex(token['counter']))
+        print('timestamp = ' + hex(token['timestamp']))
+        print('crc = ' + hex(token['crc']))
 
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
@@ -308,10 +320,30 @@ class ArduKeyVerification(object):
             print('DEBUG: The secret id is not the same as in database!')
             return False
 
-        ## TODO: Check counter value
-        ## TODO: Check timestamp
+        ## Checks if counter value of OTP is greater than database value
+        if ( token['counter'] <= oldCounter ):
+            print('DEBUG: The counter is not greater than database value!')
+            return False
 
-        return False
+        ## TODO: Check timestamp
+        ## TODO: Check counter and sessioncounter in combination
+
+        ## Try to update the current values from OTP to database
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                'UPDATE ARDUKEY SET counter = ?, sessioncounter = ?, timestamp = ? WHERE publicid = ? AND enabled = 1', [
+                token['counter'],
+                token['sessionCounter'],
+                token['timestamp'],
+                publicId,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except Exception as e:
+            print('DEBUG: Exception occured while database operation: ' + str(e))
+            return False
+
+        return True
 
     def getResponse(self):
         """
