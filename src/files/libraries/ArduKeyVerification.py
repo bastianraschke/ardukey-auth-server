@@ -55,6 +55,7 @@ class ArduKeyVerification(object):
         The request query as dictionary.
         """
 
+        ## Deligate request query
         self.__processRequest(requestQuery)
 
     def __processRequest(self, requestQuery):
@@ -103,7 +104,7 @@ class ArduKeyVerification(object):
             if ( requestHmac != calculatedRequestHmac ):
                 raise BadHmacSignatureError('The request Hmac signature is invalid!')
 
-            ## Try to verity OTP
+            ## Try to verify the given OTP
             if ( self.__verifyOTP(request['otp']) == True ):
                 self.__response['status'] = 'OK'
 
@@ -170,31 +171,38 @@ class ArduKeyVerification(object):
         @return string
         """
 
-        ## TODO
+        ## Mapping (arduhex -> hexadecimal) table
+        table = {
+            'c' : '0',
+            'b' : '1',
+            'd' : '2',
+            'e' : '3',
+            'f' : '4',
+            'g' : '5',
+            'h' : '6',
+            'i' : '7',
+            'j' : '8',
+            'k' : '9',
+            'l' : 'a',
+            'n' : 'b',
+            'r' : 'c',
+            't' : 'd',
+            'u' : 'e',
+            'v' : 'f',
+        }
 
-        ## Convert input string to lowercase
-        arduhexString = arduhexString.lower()
+        hexString = ''
 
-        ## Hexadecimal table
-        hexTable = '0123456789abcdef'
+        try:
+            ## Try to replace each character of arduhex string
+            for i in range(0, len(arduhexString)):
+                currentArduhexChar = arduhexString[i]
+                hexString += table[currentArduhexChar]
 
-        ## TODO: Own table
-        ## ArduKey transformation table
-        arduhexTable = 'cbdefghijklnrtuv'
+        except KeyError:
+            raise ValueError('The given input contains non-valid character(s)!')
 
-        result = ''
-
-        for i in range(0, len(arduhexString)):
-
-            position = arduhexTable.find(arduhexString[i])
-
-            ## Checks if character was found
-            if ( position == -1 ):
-                raise ValueError('The given input contains a non-valid character!')
-            else:
-                result += hexTable[position]
-
-        return result
+        return hexString
 
     def __calculateCRC16(self, hexString):
         """
@@ -277,7 +285,7 @@ class ArduKeyVerification(object):
             print('DEBUG: Error occured while database operation: ' + str(e))
             return False
 
-        ## TODO: In previous exception block?
+        ## TODO: Better in previous exception block?
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
             oldCounter = int(rows[0][1])
@@ -310,12 +318,12 @@ class ArduKeyVerification(object):
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
 
-        ## Compare the OTP and calculated checksum
+        ## Compare the given OTP checksum and calculated checksum
         if ( token['crc'] != calculatedCRC ):
-            print('DEBUG: The CRC checksum of OTP is not correct!')
+            print('DEBUG: The checksum of he OTP is not correct!')
             return False
 
-        ## Checks if database secretid matches to value in OTP
+        ## Checks if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):
             print('DEBUG: The secret id is not the same as in database!')
             return False
