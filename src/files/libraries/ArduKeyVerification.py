@@ -126,9 +126,9 @@ class ArduKeyVerification(object):
             ## Some parameters are not okay
             self.__response['status'] = 'MISSING_PARAMETER'
 
-        ## except:
-        ##     ## General errors
-        ##     self.__response['status'] = 'UNKNOWN_ERROR'
+        except:
+            ## General errors
+            self.__response['status'] = 'UNKNOWN_ERROR'
 
     def __calculateHmac(self, data):
         """
