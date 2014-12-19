@@ -6,7 +6,7 @@ Standards-Version: 3.9.4
 Build-Depends: debhelper (>= 9)
 
 Package: ardukey-auth
-Depends: python3, python-sqlite, python3-crypto, ${misc:Depends}
+Depends: python3, python-sqlite, python3-crypto, lsb-base (>= 3.0-6), ${misc:Depends}
 Architecture: all
 Homepage: https://sicherheitskritisch.de
 Description: ArduKey authentication server for 2FA written in Python 3.
