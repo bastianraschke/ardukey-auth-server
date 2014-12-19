@@ -1,5 +1,3 @@
 - config file writer: do not write everytime
-- CRC16 C++ vs. Python tests
 - write README file
-- logger
-- debug mode
+- logger + debug mode

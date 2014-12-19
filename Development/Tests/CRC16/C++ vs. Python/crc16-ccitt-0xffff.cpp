@@ -24,7 +24,7 @@ uint16_t crc16(const uint8_t values[], size_t length)
         x = x ^ (x >> 4);
 
         crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
-        //crc = crc & 0xFFFF;
+        crc = crc & 0xFFFF;
     }
 
     return crc;
