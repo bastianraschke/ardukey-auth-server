@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding: utf8
 
 """
 ArduKey authserver
@@ -41,7 +42,7 @@ class ArduKeyVerification(object):
     The shared secret of API user.
 
     @attribute dict __response
-    The response dictionary (the result of validation request).
+    The response dictionary (the result of verification request).
     """
 
     __sharedSecret = ''
@@ -60,7 +61,7 @@ class ArduKeyVerification(object):
 
     def __processRequest(self, requestQuery):
         """
-        Validates a given request.
+        Processes and validates the given request.
 
         @param dict requestQuery
         The request to process.
@@ -97,7 +98,7 @@ class ArduKeyVerification(object):
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
-            print('DEBUG: calculatedRequestHmac = ' + calculatedRequestHmac)
+            print('DEBUG: Expected Hmac: ' + calculatedRequestHmac)
 
             ## Compare request Hmac hashes
             ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
@@ -110,6 +111,10 @@ class ArduKeyVerification(object):
 
             else:
                 self.__response['status'] = 'INVALID_OTP'
+
+        except NoAPIIdAvailableError:
+            ## The API id was not found
+            self.__response['status'] = 'API_ID_NOTFOUND'
 
         except ValueError:
             ## The OTP has an invalid format
@@ -285,7 +290,6 @@ class ArduKeyVerification(object):
             print('DEBUG: Error occured while database operation: ' + str(e))
             return False
 
-        ## TODO: Better in previous exception block?
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
             oldCounter = int(rows[0][1])
@@ -298,22 +302,20 @@ class ArduKeyVerification(object):
 
         ## Decrypt encrypted token
         decryptedToken = AESWrapper(aesKey).decrypt(encryptedToken)
-        print('DEBUG: decryptedToken = ' + decryptedToken)
+        print('DEBUG: Raw token: ' + decryptedToken)
 
         ## TODO: Big/Little endian description
         token = {}
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
         token['sessionCounter'] = int(decryptedToken[16:18], 16)
-
         token['timestamp'] = int(decryptedToken[18:20] + decryptedToken[20:22] + decryptedToken[22:24], 16)
+        token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
-        print('secretId = ' + token['secretId'])
-        print('sessionCounter = ' + hex(token['sessionCounter']))
-        print('counter = ' + hex(token['counter']))
-        print('timestamp = ' + hex(token['timestamp']))
-        print('crc = ' + hex(token['crc']))
+        ## DEBUG
+        print('(counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X})'.format(
+        token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc']))
 
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
@@ -323,18 +325,25 @@ class ArduKeyVerification(object):
             print('DEBUG: The checksum of he OTP is not correct!')
             return False
 
-        ## Checks if database secret id matches to value in OTP
+        ## Check if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):
             print('DEBUG: The secret id is not the same as in database!')
             return False
 
-        ## Checks if counter value of OTP is greater than database value
-        if ( token['counter'] <= oldCounter ):
-            print('DEBUG: The counter is not greater than database value!')
-            return False
+        ## TODO
 
-        ## TODO: Check timestamp
-        ## TODO: Check counter and sessioncounter in combination
+        ## Check if the ArduKey has been re-plugged (counter is greater than old counter)
+        if ( token['counter'] <= oldCounter ):
+
+            ## Check if session counter has been incremented
+            if ( token['sessionCounter'] <= oldSessionCounter ):
+                print('DEBUG: The session counter is not greater than database value!')
+                return False
+
+            ## Check if timestamp has been incremented
+            if ( token['timestamp'] <= oldTimestamp ):
+                print('DEBUG: The timestamp is not greater than database value!')
+                return False
 
         ## Try to update the current values from OTP to database
         try:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding: utf8
 
 """
 ArduKey authserver
@@ -49,7 +50,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
     def send_output(self, message):
         """
-        Sends a given message to client.
+        Send a given message to client.
 
         @param string message The message to send to client.
         @return void
@@ -68,16 +69,17 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            ## Parses all query arguments to dictionary
+            ## Parse all query arguments to dictionary
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
-            ## Deligates request to Validation class
+            ## Deligate request to verification class
             verification = ArduKeyVerification(requestParameters)
-            response = verification.getResponse();
+            verificationResponse = verification.getResponse();
 
-            ## Sends JSON formatted response
-            self.send_output(json.dumps(response, indent='\t', sort_keys=True))
+            ## Send JSON formatted response
+            self.send_output(json.dumps(verificationResponse, indent='\t', sort_keys=True))
 
+        ## Fallback message
         else:
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
@@ -92,10 +94,10 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 ## TODO: Path to file
 configurationFilePath = './ardukey-auth.conf'
 
-## Reads from configuration file
-configuration = ConfigurationFile(configurationFilePath, readOnly=True)
-
 try:
+    ## Try to read configuration file
+    configuration = ConfigurationFile(configurationFilePath, readOnly=True)
+
     ## The address the server is running on
     serverAddress = configuration.readString('Default', 'server_address')
 
@@ -103,17 +105,20 @@ try:
     serverPort = configuration.readInteger('Default', 'server_port')
 
 except:
-    print('The configuration file "' + configurationFilePath + '" could not be read correctly!')
+    sys.stderr.write('The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
     exit(1)
 
 try:
     httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
-    print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort))
+    print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort) + '\n')
 
     httpServer.serve_forever()
 
 except KeyboardInterrupt:
     print('KeyboardInterrupt received, shutting down ArduKey authserver...')
+
+finally:
+    ## Shutting down HTTP server
     httpServer.socket.close()
 
 ## Default exit
