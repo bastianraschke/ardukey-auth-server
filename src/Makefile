@@ -32,6 +32,8 @@ install:
 
 	install -D --mode 644 files/ardukey-auth.sqlite $(DESTDIR)$(varprefix)/ardukey-auth.sqlite
 
+	## TODO: copy log file with www-data permission
+
 clean:
 	find files/ -name "*.pyc" -exec rm -rf {} \;
 	rm -rf files/libraries/__pycache__/

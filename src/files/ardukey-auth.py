@@ -12,12 +12,37 @@ All rights reserved.
 import http.server
 import urllib.parse
 import json
-
+import logging
 import sys
+
+## Append library path, so Python is able to import from there
 sys.path.append('/usr/lib/ardukey-auth/')
 
 from libraries.ConfigurationFile import ConfigurationFile
 from libraries.ArduKeyVerification import ArduKeyVerification
+
+## Try to initialize logger
+try:
+    logger = logging.getLogger('ARDUKEY')
+    logger.setLevel(logging.DEBUG)
+
+    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    ## Stream output handler
+    strmHandler = logging.StreamHandler()
+    strmHandler.setLevel(logging.DEBUG)
+    strmHandler.setFormatter(logFormatter)
+    logger.addHandler(strmHandler)
+
+    ## Log file handler
+    fileHandler = logging.FileHandler('/var/log/ardukey-auth.log')
+    fileHandler.setLevel(logging.INFO)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+
+except:
+    ## The system is able to work without logging
+    sys.stderr.write('Warning: The logger could not be initialized correctly!\n')
 
 ## Version of authserver
 __version__ = '1.0'
@@ -94,8 +119,8 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 ## TODO: Path to file
 configurationFilePath = './ardukey-auth.conf'
 
+## Try to read parameters from configuration file
 try:
-    ## Try to read configuration file
     configuration = ConfigurationFile(configurationFilePath, readOnly=True)
 
     ## The address the server is running on
@@ -105,9 +130,11 @@ try:
     serverPort = configuration.readInteger('Default', 'server_port')
 
 except:
+    ## Without configuration the system is not able to work
     sys.stderr.write('The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
     exit(1)
 
+## Try to start HTTP server
 try:
     httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
     print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort) + '\n')
@@ -118,7 +145,7 @@ except KeyboardInterrupt:
     print('KeyboardInterrupt received, shutting down ArduKey authserver...')
 
 finally:
-    ## Shutting down HTTP server
+    ## Always shutting down HTTP server
     httpServer.socket.close()
 
 ## Default exit

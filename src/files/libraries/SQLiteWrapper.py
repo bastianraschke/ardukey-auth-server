@@ -39,7 +39,7 @@ class SQLiteWrapper(object):
         """
         Singleton method
 
-        @return Database
+        @return self
         """
 
         ## Gets ID of current thread

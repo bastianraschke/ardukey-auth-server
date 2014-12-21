@@ -17,6 +17,9 @@ class ConfigurationFile(object):
     """
     Configuration file parser and writer.
 
+    @attribute dict<self> __instances
+    Singleton instances.
+
     @attribute string __filePath
     The path to configuration file.
 
@@ -27,9 +30,27 @@ class ConfigurationFile(object):
     The ConfigParser object.
     """
 
+    __instances = {}
+
     __filePath = None
     __readOnly = False
     __configParser = None
+
+    @classmethod
+    def getInstance(self):
+        """
+        Singleton method
+
+        @return self
+        """
+
+        ## Gets ID of current thread
+        currentThreadId = threading.current_thread().ident
+
+        if ( currentThreadId not in self.__instances ):
+            self.__instances[currentThreadId] = self()
+
+        return self.__instances[currentThreadId]
 
     def __init__(self, filePath, readOnly = False):
         """

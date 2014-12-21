@@ -13,6 +13,7 @@ import time
 import urllib.parse
 import hmac, hashlib
 import re
+import logging
 
 from libraries.AESWrapper import AESWrapper
 from libraries.SQLiteWrapper import SQLiteWrapper
@@ -34,17 +35,29 @@ class BadHmacSignatureError(Exception):
 
     pass
 
+class CurruptedOTPError(ValueError):
+    """
+    Dummy exception class for currupted OTP format.
+
+    """
+
+    pass
+
 class ArduKeyVerification(object):
     """
     ArduKey OTP verification class.
 
+    @attribute logging.Logger __logger
+    The global logging instance.
+
     @attribute string __sharedSecret
-    The shared secret of API user.
+    The shared secret of API id.
 
     @attribute dict __response
     The response dictionary (the result of verification request).
     """
 
+    __logger = logging.getLogger('ARDUKEY')
     __sharedSecret = ''
     __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
@@ -94,16 +107,15 @@ class ArduKeyVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIIdAvailableError('No valid API id found in database!')
+                raise NoAPIIdAvailableError()
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
-            print('DEBUG: Expected Hmac: ' + calculatedRequestHmac)
 
             ## Compare request Hmac hashes
             ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
             if ( requestHmac != calculatedRequestHmac ):
-                raise BadHmacSignatureError('The request Hmac signature is invalid!')
+                raise BadHmacSignatureError()
 
             ## Try to verify the given OTP
             if ( self.__verifyOTP(request['otp']) == True ):
@@ -114,27 +126,30 @@ class ArduKeyVerification(object):
 
         except NoAPIIdAvailableError:
             ## The API id was not found
-            self.__response['status'] = 'API_ID_NOTFOUND'
-
-        except ValueError:
-            ## The OTP has an invalid format
-            self.__response['status'] = 'CURRUPTED_OTP'
-
-        except NoAPIIdAvailableError:
-            ## The API id was not found
+            ## TODO: Use the variable request['apiId']?
+            self.__logger.debug('The given API id "' + request['apiId'] + '" was not found!')
             self.__response['status'] = 'API_ID_NOTFOUND'
 
         except BadHmacSignatureError:
             ## The request Hmac signature is bad
+            ## TODO: Use the variable calculatedRequestHmac?
+            self.__logger.debug('The request Hmac signature is invalid! Expected Hmac: ' + calculatedRequestHmac)
             self.__response['status'] = 'INVALID_SIGNATURE'
 
-        except KeyError:
-            ## Some parameters are not okay
+        except CurruptedOTPError as e:
+            ## The OTP has an invalid format
+            self.__logger.debug('Currupted OTP: Exception message: ' + str(e))
+            self.__response['status'] = 'CURRUPTED_OTP'
+
+        except KeyError as e:
+            ## Some request parameters are not okay
+            self.__logger.debug('Missing the request parameter: ' + str(e))
             self.__response['status'] = 'MISSING_PARAMETER'
 
-        except:
-            ## General errors
-            self.__response['status'] = 'UNKNOWN_ERROR'
+        except Exception:
+            ## General unexpected errors
+            self.__logger.critical('Unexpected exception occured:', exc_info=1)
+            self.__response['status'] = 'SERVER_ERROR'
 
     def __calculateHmac(self, data):
         """
@@ -152,7 +167,7 @@ class ArduKeyVerification(object):
 
         ## Checks if shared secret is given
         if ( len(self.__sharedSecret) == 0 ):
-            raise ValueError('No shared secret given!')
+            raise ValueError('No shared secret given to perform Hmac calculation!')
 
         dataString = ''
 
@@ -256,14 +271,14 @@ class ArduKeyVerification(object):
 
         ## Pre-Regex length check
         if ( otpLength != 44 ):
-            raise ValueError('The OTP has an invalid length!')
+            raise CurruptedOTPError('The OTP has an invalid length!')
 
         otpRegex = '^([cbdefghijklnrtuv]{12})([cbdefghijklnrtuv]{32})$'
         otpRegexSearch = re.search(otpRegex, otp)
 
         ## Regex general format check
         if ( otpRegexSearch == None ):
-            raise ValueError('The OTP has an invalid format!')
+            raise CurruptedOTPError('The OTP has an invalid format!')
 
         ## Try to extract public id and token from OTP
         try:
@@ -271,24 +286,19 @@ class ArduKeyVerification(object):
             encryptedToken = otpRegexSearch.group(2)
 
         except:
-            raise ValueError('The OTP does not contain public id or token!')
+            raise CurruptedOTPError('The OTP does not contain public id or token!')
 
         ## Convert public id and encrypted token to default hexadecimal string representation
         publicId = self.__decodeArduHex(publicId)
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
-        ## Try to get required information from database
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                'SELECT secretid, counter, sessioncounter, timestamp, aeskey FROM ARDUKEY WHERE publicid = ? AND enabled = 1', [
-                publicId,
-            ])
+        ## Get required information from database
+        SQLiteWrapper.getInstance().cursor.execute(
+            'SELECT secretid, counter, sessioncounter, timestamp, aeskey FROM ARDUKEY WHERE publicid = ? AND enabled = 1', [
+            publicId,
+        ])
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
-
-        except Exception as e:
-            print('DEBUG: Error occured while database operation: ' + str(e))
-            return False
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
@@ -297,12 +307,11 @@ class ArduKeyVerification(object):
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
         else:
-            print('DEBUG: No valid ArduKey found in database!')
+            self.__logger.info('The public id "' + publicId + '" was not found in database!')
             return False
 
         ## Decrypt encrypted token
         decryptedToken = AESWrapper(aesKey).decrypt(encryptedToken)
-        print('DEBUG: Raw token: ' + decryptedToken)
 
         ## TODO: Big/Little endian description
         token = {}
@@ -313,22 +322,22 @@ class ArduKeyVerification(object):
         token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
-        ## DEBUG
-        print('(counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X})'.format(
-        token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc']))
+        ## TODO
+        debugOTP = '(counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X})'
+        debugOTP.format(token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
+
+        self.__logger.debug('Raw token: ' + decryptedToken)
 
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
 
         ## Compare the given OTP checksum and calculated checksum
         if ( token['crc'] != calculatedCRC ):
-            print('DEBUG: The checksum of he OTP is not correct!')
-            return False
+            raise CurruptedOTPError('The checksum of he OTP is not correct!')
 
         ## Check if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):
-            print('DEBUG: The secret id is not the same as in database!')
-            return False
+            raise CurruptedOTPError('The secret id is not the same as in database!')
 
         ## TODO
 
@@ -337,28 +346,23 @@ class ArduKeyVerification(object):
 
             ## Check if session counter has been incremented
             if ( token['sessionCounter'] <= oldSessionCounter ):
-                print('DEBUG: The session counter is not greater than database value!')
+                self.__logger.debug('The session counter is not greater than old value!')
                 return False
 
             ## Check if timestamp has been incremented
             if ( token['timestamp'] <= oldTimestamp ):
-                print('DEBUG: The timestamp is not greater than database value!')
+                self.__logger.debug('The timestamp is not greater than old value!')
                 return False
 
-        ## Try to update the current values from OTP to database
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                'UPDATE ARDUKEY SET counter = ?, sessioncounter = ?, timestamp = ? WHERE publicid = ? AND enabled = 1', [
-                token['counter'],
-                token['sessionCounter'],
-                token['timestamp'],
-                publicId,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
-
-        except Exception as e:
-            print('DEBUG: Exception occured while database operation: ' + str(e))
-            return False
+        ## Update the current values from OTP to database
+        SQLiteWrapper.getInstance().cursor.execute(
+            'UPDATE ARDUKEY SET counter = ?, sessioncounter = ?, timestamp = ? WHERE publicid = ? AND enabled = 1', [
+            token['counter'],
+            token['sessionCounter'],
+            token['timestamp'],
+            publicId,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
 
         return True
 
@@ -380,7 +384,7 @@ class ArduKeyVerification(object):
         ## Only perform operation if shared secret is available
         if ( len(self.__sharedSecret) > 0 ):
 
-            ## Calculate HMAC of current response
+            ## Calculate Hmac of current response
             self.__response['hmac'] = self.__calculateHmac(self.__response)
 
         return self.__response
