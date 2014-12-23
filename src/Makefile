@@ -39,5 +39,5 @@ install:
 clean:
 	echo -n > files/ardukey-auth.sqlite
 
-	## TODO: Better approach?
-	rm -rf files/ardukeyauth/__pycache__/
+	find files/ -name "__pycache__" -exec rm -rf {} \;
+	find files/ -name "*.pyc" -exec rm -f {} \;

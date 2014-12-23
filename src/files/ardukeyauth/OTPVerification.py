@@ -20,9 +20,9 @@ import Crypto.Cipher.AES as AES
 from ardukeyauth.SQLiteWrapper import SQLiteWrapper
 
 
-class NoAPIIdAvailableError(Exception):
+class NoAPIKeyAvailableError(Exception):
     """
-    Dummy exception class for not available API id.
+    Dummy exception class for not available API key.
 
     """
 
@@ -52,7 +52,7 @@ class OTPVerification(object):
     The global logging instance.
 
     @attribute string __sharedSecret
-    The shared secret of API id.
+    The shared secret of API key.
 
     @attribute dict __response
     The response dictionary (the result of verification request).
@@ -88,7 +88,7 @@ class OTPVerification(object):
             request = {}
             request['otp'] = urllib.parse.quote(requestQuery['otp'][0])
             request['nonce'] = urllib.parse.quote(requestQuery['nonce'][0])
-            request['apiId'] = urllib.parse.quote(requestQuery['apiId'][0])
+            request['apiKey'] = urllib.parse.quote(requestQuery['apiKey'][0])
 
             ## Do not insert request Hmac to request dictionary, to exclude it from Hmac calculation
             requestHmac = urllib.parse.quote(requestQuery['hmac'][0])
@@ -97,14 +97,14 @@ class OTPVerification(object):
             self.__response['otp'] = request['otp']
             self.__response['nonce'] = request['nonce']
 
-            ## Get shared secret of given API id
+            ## Get shared secret of given API key
             SQLiteWrapper.getInstance().cursor.execute(
                 '''
                 SELECT secret
                 FROM API
                 WHERE id = ? AND enabled = 1
                 ''', [
-                request['apiId'],
+                request['apiKey'],
             ])
 
             rows = SQLiteWrapper.getInstance().cursor.fetchall()
@@ -112,7 +112,7 @@ class OTPVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIIdAvailableError('The given API id "' + request['apiId'] + '" was not found!')
+                raise NoAPIKeyAvailableError('The given API key "' + request['apiKey'] + '" was not found!')
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
@@ -129,10 +129,10 @@ class OTPVerification(object):
             else:
                 self.__response['status'] = 'INVALID_OTP'
 
-        except NoAPIIdAvailableError as e:
-            ## The API id was not found
+        except NoAPIKeyAvailableError as e:
+            ## The API key was not found
             self.__logger.debug(e)
-            self.__response['status'] = 'API_ID_NOTFOUND'
+            self.__response['status'] = 'API_KEY_NOTFOUND'
 
         except BadHmacSignatureError as e:
             ## The request Hmac signature is bad
