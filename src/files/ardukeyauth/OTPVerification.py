@@ -14,8 +14,9 @@ import urllib.parse
 import hmac, hashlib
 import re
 import logging
+import binascii
+import Crypto.Cipher.AES as AES
 
-from ardukeyauth.AESWrapper import AESWrapper
 from ardukeyauth.SQLiteWrapper import SQLiteWrapper
 
 
@@ -43,7 +44,7 @@ class CurruptedOTPError(ValueError):
 
     pass
 
-class ArduKeyVerification(object):
+class OTPVerification(object):
     """
     ArduKey OTP verification class.
 
@@ -57,7 +58,7 @@ class ArduKeyVerification(object):
     The response dictionary (the result of verification request).
     """
 
-    __logger = logging.getLogger('ARDUKEY')
+    __logger = logging.getLogger()
     __sharedSecret = ''
     __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
@@ -98,7 +99,11 @@ class ArduKeyVerification(object):
 
             ## Get shared secret of given API id
             SQLiteWrapper.getInstance().cursor.execute(
-                'SELECT secret FROM API WHERE id = ? AND enabled = 1', [
+                '''
+                SELECT secret
+                FROM API
+                WHERE id = ? AND enabled = 1
+                ''', [
                 request['apiId'],
             ])
 
@@ -107,7 +112,7 @@ class ArduKeyVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIIdAvailableError()
+                raise NoAPIIdAvailableError('The given API id "' + request['apiId'] + '" was not found!')
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
@@ -115,7 +120,7 @@ class ArduKeyVerification(object):
             ## Compare request Hmac hashes
             ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
             if ( requestHmac != calculatedRequestHmac ):
-                raise BadHmacSignatureError()
+                raise BadHmacSignatureError('The request Hmac signature is invalid (expected: ' + calculatedRequestHmac + ')!')
 
             ## Try to verify the given OTP
             if ( self.__verifyOTP(request['otp']) == True ):
@@ -124,16 +129,14 @@ class ArduKeyVerification(object):
             else:
                 self.__response['status'] = 'INVALID_OTP'
 
-        except NoAPIIdAvailableError:
+        except NoAPIIdAvailableError as e:
             ## The API id was not found
-            ## TODO: Use the variable request['apiId']?
-            self.__logger.debug('The given API id "' + request['apiId'] + '" was not found!')
+            self.__logger.debug(e)
             self.__response['status'] = 'API_ID_NOTFOUND'
 
-        except BadHmacSignatureError:
+        except BadHmacSignatureError as e:
             ## The request Hmac signature is bad
-            ## TODO: Use the variable calculatedRequestHmac?
-            self.__logger.debug('The request Hmac signature is invalid! Expected Hmac: ' + calculatedRequestHmac)
+            self.__logger.debug(e)
             self.__response['status'] = 'INVALID_SIGNATURE'
 
         except CurruptedOTPError as e:
@@ -148,7 +151,7 @@ class ArduKeyVerification(object):
 
         except Exception:
             ## General unexpected errors
-            self.__logger.critical('Unexpected exception occured:', exc_info=1)
+            self.__logger.error('Unexpected exception occured:', exc_info=1)
             self.__response['status'] = 'SERVER_ERROR'
 
     def __calculateHmac(self, data):
@@ -224,6 +227,33 @@ class ArduKeyVerification(object):
 
         return hexString
 
+    def __decryptAES(self, aesKey, cipher):
+        """
+        Decrypts (AES-ECB) given cipher text and returns plain text as hexadecimal string.
+
+        @param string aesKey
+        The used AES key as hexadecimal string.
+
+        @param string cipher
+        The cipher text as hexadecimal string.
+
+        @return string
+        """
+
+        if ( len(aesKey) != 32 ):
+            raise ValueError('The length of the hexadecimal AES key must be 32!')
+
+        if ( len(cipher) != 32 ):
+            raise ValueError('The length of the hexadecimal cipher text must be 32!')
+
+        aesKeyBytes = binascii.unhexlify(aesKey.encode('utf-8'))
+        aes = AES.new(aesKeyBytes, AES.MODE_ECB)
+
+        cipherBytes = binascii.unhexlify(cipher.encode('utf-8'))
+        plainBytes = aes.decrypt(cipherBytes)
+
+        return binascii.hexlify(plainBytes).decode('utf-8')
+
     def __calculateCRC16(self, hexString):
         """
         Calculates the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
@@ -294,7 +324,11 @@ class ArduKeyVerification(object):
 
         ## Get required information from database
         SQLiteWrapper.getInstance().cursor.execute(
-            'SELECT secretid, counter, sessioncounter, timestamp, aeskey FROM ARDUKEY WHERE publicid = ? AND enabled = 1', [
+            '''
+            SELECT secretid, counter, sessioncounter, timestamp, aeskey
+            FROM ARDUKEY
+            WHERE publicid = ? AND enabled = 1
+            ''', [
             publicId,
         ])
 
@@ -311,22 +345,22 @@ class ArduKeyVerification(object):
             return False
 
         ## Decrypt encrypted token
-        decryptedToken = AESWrapper(aesKey).decrypt(encryptedToken)
+        decryptedToken = self.__decryptAES(aesKey, encryptedToken)
 
-        ## TODO: Big/Little endian description
+        ## Extract data from decrypted token
+        ## Note: The data in token must be interpreted as Little endian (eg. 'aabb' becomes 0xbbaa)
         token = {}
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
         token['sessionCounter'] = int(decryptedToken[16:18], 16)
-        token['timestamp'] = int(decryptedToken[18:20] + decryptedToken[20:22] + decryptedToken[22:24], 16)
+        token['timestamp'] = int(decryptedToken[22:24] + decryptedToken[20:22] + decryptedToken[18:20], 16)
         token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
-        ## TODO
-        debugOTP = '(counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X})'
-        debugOTP.format(token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
-
-        self.__logger.debug('Raw token: ' + decryptedToken)
+        ## Format the extracted data for easy debugging
+        explainedToken = 'counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X}'
+        explainedToken = explainedToken.format(token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
+        self.__logger.debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
 
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
@@ -338,8 +372,6 @@ class ArduKeyVerification(object):
         ## Check if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):
             raise CurruptedOTPError('The secret id is not the same as in database!')
-
-        ## TODO
 
         ## Check if the ArduKey has been re-plugged (counter is greater than old counter)
         if ( token['counter'] <= oldCounter ):
@@ -354,9 +386,15 @@ class ArduKeyVerification(object):
                 self.__logger.debug('The timestamp is not greater than old value!')
                 return False
 
+        ## TODO: Security revision
+
         ## Update the current values from OTP to database
         SQLiteWrapper.getInstance().cursor.execute(
-            'UPDATE ARDUKEY SET counter = ?, sessioncounter = ?, timestamp = ? WHERE publicid = ? AND enabled = 1', [
+            '''
+            UPDATE ARDUKEY
+            SET counter = ?, sessioncounter = ?, timestamp = ?
+            WHERE publicid = ? AND enabled = 1
+            ''', [
             token['counter'],
             token['sessionCounter'],
             token['timestamp'],

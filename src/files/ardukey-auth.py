@@ -15,9 +15,9 @@ import json
 import logging
 import sys
 
-from ardukeyauth.ConfigurationFile import ConfigurationFile
-from ardukeyauth.ArduKeyVerification import ArduKeyVerification
-from ardukeyauth import __version__
+from ardukeyauth.Configuration import Configuration
+from ardukeyauth.OTPVerification import OTPVerification
+from ardukeyauth import __version__ as VERSION
 
 ## Path to logging file
 loggingFilePath = '/var/log/ardukey-auth.log'
@@ -36,7 +36,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     The Python version string.
     """
 
-    server_version = 'ArduKey authserver/' + ardukeyauth.__version__
+    server_version = 'ArduKey authserver/' + VERSION
 
     ## Hide the sys_version attribute
     sys_version = ''
@@ -76,7 +76,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
 
             ## Deligate request to verification class
-            verification = ArduKeyVerification(requestParameters)
+            verification = OTPVerification(requestParameters)
             verificationResponse = verification.getResponse();
 
             ## Send JSON formatted response
@@ -96,12 +96,15 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
 ## Try to initialize logger
 try:
-    logger = logging.getLogger('ARDUKEY')
+    logger = logging.getLogger()
 
-    ## TODO: Set logging level
-    logger.setLevel(logging.DEBUG)
+    ## Enable debugging if "--debug" flag is given
+    if ( '--debug' in sys.argv ):
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
-    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
     ## Stream output handler
     strmHandler = logging.StreamHandler()
@@ -109,7 +112,7 @@ try:
     strmHandler.setFormatter(logFormatter)
     logger.addHandler(strmHandler)
 
-    ## Log file handler
+    ## Logging file handler
     fileHandler = logging.FileHandler(loggingFilePath)
     fileHandler.setLevel(logging.INFO)
     fileHandler.setFormatter(logFormatter)
@@ -121,7 +124,7 @@ except:
 
 ## Try to read parameters from configuration file
 try:
-    configuration = ConfigurationFile(configurationFilePath, readOnly=True)
+    configuration = Configuration(configurationFilePath, readOnly=True)
 
     ## The address the server is running on
     serverAddress = configuration.readString('Default', 'server_address')
@@ -131,13 +134,13 @@ try:
 
 except:
     ## Without configuration the system is not able to work
-    sys.stderr.write('The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
+    sys.stderr.write('Fatal error: The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
     exit(1)
 
 ## Try to start HTTP server
 try:
     httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
-    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort) + '\n')
+    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort))
 
     httpServer.serve_forever()
 

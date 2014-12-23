@@ -13,7 +13,7 @@ import sqlite3
 import threading
 import os
 
-from ardukeyauth.ConfigurationFile import ConfigurationFile
+from ardukeyauth.Configuration import Configuration
 
 
 class SQLiteWrapper(object):
@@ -42,7 +42,7 @@ class SQLiteWrapper(object):
         @return self
         """
 
-        ## Gets ID of current thread
+        ## Get id of current thread
         currentThreadId = threading.current_thread().ident
 
         if ( currentThreadId not in self.__instances ):
@@ -77,13 +77,13 @@ class SQLiteWrapper(object):
         configurationFilePath = './ardukey-auth.conf'
 
         ## Reads from configuration file
-        configuration = ConfigurationFile(configurationFilePath)
+        configuration = Configuration(configurationFilePath)
 
         databaseFilePath = configuration.readString('Default', 'database_file')
 
         ## Checks if path/file is writable
         if ( os.access(databaseFilePath, os.W_OK) == False ):
-            raise Exception('The database file "' + databaseFilePath + '" is not writable!')
+            raise ValueError('The database file "' + databaseFilePath + '" is not writable!')
 
         self.connection = sqlite3.connect(databaseFilePath)
         self.cursor = self.connection.cursor()

@@ -13,7 +13,7 @@ import configparser
 import os
 
 
-class ConfigurationFile(object):
+class Configuration(object):
     """
     Configuration file parser and writer.
 
