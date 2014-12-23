@@ -21,6 +21,10 @@ install:
 	  $(DESTDIR)/etc/ardukey-auth.conf
 
 	install --mode 755 \
+	  files/ardukey-auth-conf.py \
+	  $(DESTDIR)/usr/bin/ardukey-auth-conf
+
+	install --mode 755 \
 	  files/ardukey-auth.py \
 	  $(DESTDIR)/usr/sbin/ardukey-auth.py
 

@@ -3,7 +3,7 @@
 
 """
 ArduKey authserver configuration tool
-@author Bastian Raschke
+@author Bastian Raschke <bastian.raschke@posteo.de>
 
 Copyright 2014 Bastian Raschke
 All rights reserved.

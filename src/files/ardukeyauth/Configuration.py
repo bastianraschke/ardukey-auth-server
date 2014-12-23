@@ -3,7 +3,7 @@
 
 """
 ArduKey authserver
-@author Philipp Meisberger, Bastian Raschke
+@author Philipp Meisberger <team@pm-codeworks.de>, Bastian Raschke <bastian.raschke@posteo.de>
 
 Copyright 2014 Philipp Meisberger, Bastian Raschke
 All rights reserved.
