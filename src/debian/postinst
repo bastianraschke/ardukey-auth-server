@@ -1,0 +1,6 @@
+#!/bin/sh
+
+## Enables service
+update-rc.d ardukey-auth defaults
+
+exit 0

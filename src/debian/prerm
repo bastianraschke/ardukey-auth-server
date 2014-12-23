@@ -1,0 +1,10 @@
+#!/bin/sh
+
+## Disables service
+update-rc.d ardukey-auth remove
+
+## Deletes all compiled stuff from Python 3
+## TODO: Better approach?
+rm -rf /usr/lib/python3/dist-packages/ardukeyauth/__pycache__/
+
+exit 0

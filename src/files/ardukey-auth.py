@@ -15,37 +15,15 @@ import json
 import logging
 import sys
 
-## Append library path, so Python is able to import from there
-sys.path.append('/usr/lib/ardukey-auth/')
+from ardukeyauth.ConfigurationFile import ConfigurationFile
+from ardukeyauth.ArduKeyVerification import ArduKeyVerification
+from ardukeyauth import __version__
 
-from libraries.ConfigurationFile import ConfigurationFile
-from libraries.ArduKeyVerification import ArduKeyVerification
+## Path to logging file
+loggingFilePath = '/var/log/ardukey-auth.log'
 
-## Try to initialize logger
-try:
-    logger = logging.getLogger('ARDUKEY')
-    logger.setLevel(logging.DEBUG)
-
-    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    ## Stream output handler
-    strmHandler = logging.StreamHandler()
-    strmHandler.setLevel(logging.DEBUG)
-    strmHandler.setFormatter(logFormatter)
-    logger.addHandler(strmHandler)
-
-    ## Log file handler
-    fileHandler = logging.FileHandler('/var/log/ardukey-auth.log')
-    fileHandler.setLevel(logging.INFO)
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
-
-except:
-    ## The system is able to work without logging
-    sys.stderr.write('Warning: The logger could not be initialized correctly!\n')
-
-## Version of authserver
-__version__ = '1.0'
+## Path to configuration file
+configurationFilePath = '/etc/ardukey-auth.conf'
 
 class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     """
@@ -58,9 +36,9 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     The Python version string.
     """
 
-    server_version = 'ArduKey authserver/' + __version__
+    server_version = 'ArduKey authserver/' + ardukeyauth.__version__
 
-    ## Hide the sys_version attribute:
+    ## Hide the sys_version attribute
     sys_version = ''
 
     def log_message(self, format, *args):
@@ -116,8 +94,30 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
             self.send_output('</body></html>')
 
-## TODO: Path to file
-configurationFilePath = './ardukey-auth.conf'
+## Try to initialize logger
+try:
+    logger = logging.getLogger('ARDUKEY')
+
+    ## TODO: Set logging level
+    logger.setLevel(logging.DEBUG)
+
+    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    ## Stream output handler
+    strmHandler = logging.StreamHandler()
+    strmHandler.setLevel(logging.DEBUG)
+    strmHandler.setFormatter(logFormatter)
+    logger.addHandler(strmHandler)
+
+    ## Log file handler
+    fileHandler = logging.FileHandler(loggingFilePath)
+    fileHandler.setLevel(logging.INFO)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+
+except:
+    ## The system is able to work without logging
+    sys.stderr.write('Warning: The logger could not be initialized correctly!\n')
 
 ## Try to read parameters from configuration file
 try:
@@ -137,7 +137,7 @@ except:
 ## Try to start HTTP server
 try:
     httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
-    print('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort) + '\n')
+    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort) + '\n')
 
     httpServer.serve_forever()
 

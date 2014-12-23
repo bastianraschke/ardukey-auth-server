@@ -15,8 +15,8 @@ import hmac, hashlib
 import re
 import logging
 
-from libraries.AESWrapper import AESWrapper
-from libraries.SQLiteWrapper import SQLiteWrapper
+from ardukeyauth.AESWrapper import AESWrapper
+from ardukeyauth.SQLiteWrapper import SQLiteWrapper
 
 
 class NoAPIIdAvailableError(Exception):

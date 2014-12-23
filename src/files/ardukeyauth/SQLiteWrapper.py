@@ -13,7 +13,7 @@ import sqlite3
 import threading
 import os
 
-from libraries.ConfigurationFile import ConfigurationFile
+from ardukeyauth.ConfigurationFile import ConfigurationFile
 
 
 class SQLiteWrapper(object):

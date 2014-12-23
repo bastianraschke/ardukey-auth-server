@@ -4,36 +4,44 @@
 ## All rights reserved.
 
 
-## Installation rules
-
 etcprefix = /etc
 binprefix = /usr/bin
-sbinprefix = /usr/sbin
-libprefix = /usr/lib/ardukey-auth
+dmnprefix = /usr/sbin
+libprefix = /usr/lib/python3/dist-packages/ardukeyauth
 docprefix = /usr/share/doc/ardukey-auth
 manprefix = /usr/share/man/man1
-varprefix = /var/ardukey-auth
+logprefix = /var/log
 
 all:
 	@echo "Try 'make install' or 'make clean'."
 	@exit 1
 
 install:
-	install -D --mode 644 files/ardukey-auth.conf $(DESTDIR)$(etcprefix)/ardukey-auth.conf
 
-	install -D --mode 644 files/libraries/__init__.py $(DESTDIR)$(libprefix)/__init__.py
-	install -D --mode 644 files/libraries/AESWrapper.py $(DESTDIR)$(libprefix)/AESWrapper.py
-	install -D --mode 644 files/libraries/SQLiteWrapper.py $(DESTDIR)$(libprefix)/SQLiteWrapper.py
-	install -D --mode 644 files/libraries/ArduKeyVerification.py $(DESTDIR)$(libprefix)/ArduKeyVerification.py
-	install -D --mode 644 files/libraries/ConfigurationFile.py $(DESTDIR)$(libprefix)/ConfigurationFile.py
+	## TODO: Better cp -r files/ardukeyauth/* $(DESTDIR)$(libprefix)
+	install -d $(DESTDIR)$(libprefix)
+	install files/ardukeyauth/* -t $(DESTDIR)$(libprefix)
 
-	install -D --mode 755 files/ardukey-auth.py $(DESTDIR)$(sbinprefix)/ardukey-auth.py
-	## TODO: make executable
+	install --mode 644 \
+	  files/ardukey-auth.conf \
+	  $(DESTDIR)/etc/ardukey-auth.conf
 
-	install -D --mode 644 files/ardukey-auth.sqlite $(DESTDIR)$(varprefix)/ardukey-auth.sqlite
+	install --mode 755 \
+	  files/ardukey-auth.py \
+	  $(DESTDIR)/usr/sbin/ardukey-auth.py
 
-	## TODO: copy log file with www-data permission
+	install --mode 755 \
+	  files/ardukey-auth \
+	  $(DESTDIR)/etc/init.d/ardukey-auth
+
+	install -D --mode 644 \
+	  files/ardukey-auth.sqlite \
+	  $(DESTDIR)/usr/share/ardukey-auth/ardukey-auth.sqlite
+
+	install -D --mode 644 --owner www-data --group adm \
+	  files/ardukey-auth.log \
+	  $(DESTDIR)/var/log/ardukey-auth.log
 
 clean:
-	find files/ -name "*.pyc" -exec rm -rf {} \;
-	rm -rf files/libraries/__pycache__/
+	find files/ -type f -name "*.pyc" -exec rm -f {} \;
+	find files/ -type d -name "__pycache__" -exec rm -rf {} \;

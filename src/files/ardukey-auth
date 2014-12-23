@@ -23,42 +23,39 @@ PIDFILE="/var/run/ardukey-auth.pid"
 case "${1}" in
 
     start)
-        log_daemon_msg "Starting ${DESC}" "${NAME}"
-
         ## Ensure service is not already running
         if ( test -f "${PIDFILE}" ); then
-           log_end_msg 1
            log_failure_msg "${NAME} is already running"
            exit 1
         fi
 
-        ## TODO: Add --chuid www-data:www-data
-        start-stop-daemon --start --make-pidfile --pidfile "${PIDFILE}" --background --exec "${DAEMON}" -- "${DAEMON_ARGS}"
+        log_daemon_msg "Starting ${DESC}" "${NAME}"
+        start-stop-daemon --start --make-pidfile --pidfile "${PIDFILE}" --chuid www-data:www-data --background --exec "${DAEMON}" -- "${DAEMON_ARGS}"
 
         if ( test "${?}" = 0 ); then
            log_end_msg 0
+           exit 0
         else
-           log_end_msg 1
            rm -f "${PIDFILE}"
+           log_end_msg 1
            exit 1
         fi
     ;;
 
     stop)
-        log_daemon_msg "Stopping ${DESC}" "${NAME}"
-
         ## Ensure service is running
         if ( ! test -f "${PIDFILE}" ); then
-           log_end_msg 1
            log_failure_msg "${NAME} is not running"
            exit 1
         fi
 
-        start-stop-daemon --stop --quiet --oknodo --pidfile "${PIDFILE}"
+        log_daemon_msg "Stopping ${DESC}" "${NAME}"
+        start-stop-daemon --stop --quiet --oknodo --pidfile "${PIDFILE}" 2> /dev/null
 
         if ( test "${?}" = 0 ); then
            rm -f "${PIDFILE}"
            log_end_msg 0
+           exit 0
         else
            log_end_msg 1
            exit 1
@@ -71,6 +68,7 @@ case "${1}" in
 
     status)
         status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}" 2> /dev/null
+        exit 0
     ;;
 
     *)
@@ -79,5 +77,3 @@ case "${1}" in
     ;;
 
 esac
-
-exit 0
