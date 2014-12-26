@@ -1,5 +1,8 @@
 #!/bin/sh
 
+## Important: Be sure, the script is aborting if any error occure
+set -e
+
 ## Disables service
 update-rc.d ardukey-auth remove
 

@@ -16,19 +16,19 @@ install:
 	install -d $(DESTDIR)$(libprefix)
 	install files/ardukeyauth/* -t $(DESTDIR)$(libprefix)
 
-	install --mode 644 \
+	install -D --mode 644 \
 	  files/ardukey-auth.conf \
 	  $(DESTDIR)/etc/ardukey-auth.conf
 
-	install --mode 755 \
+	install -D --mode 755 \
 	  files/ardukey-auth-conf.py \
 	  $(DESTDIR)/usr/bin/ardukey-auth-conf
 
-	install --mode 755 \
+	install -D --mode 755 \
 	  files/ardukey-auth.py \
-	  $(DESTDIR)/usr/sbin/ardukey-auth.py
+	  $(DESTDIR)/usr/sbin/ardukey-auth
 
-	install --mode 755 \
+	install -D --mode 755 \
 	  files/ardukey-auth \
 	  $(DESTDIR)/etc/init.d/ardukey-auth
 
