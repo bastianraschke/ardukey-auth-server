@@ -1,0 +1,2 @@
+ardukey-auth.py usr/sbin/ardukey-auth
+ardukey-auth-conf.py usr/bin/ardukey-auth-conf

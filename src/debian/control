@@ -1,12 +1,13 @@
-Source: ardukey-auth
+Source: ardukey-auth-server
 Maintainer: Bastian Raschke <bastian.raschke@posteo.de>
-Section: net
+Section: python
 Priority: optional
 Standards-Version: 3.9.4
-Build-Depends: debhelper (>= 9)
+Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 7.0.50~), python3, python-support (>= 0.8.4)
 
-Package: ardukey-auth
-Depends: python3, python-sqlite, python3-crypto, lsb-base (>= 3.0-6), ${misc:Depends}
+Package: ardukey-auth-server
 Architecture: all
+Depends: python3, python-sqlite, python3-crypto, python-argparse, lsb-base (>= 3.0-6), ${misc:Depends}, ${python:Depends}
 Homepage: https://sicherheitskritisch.de
+Provides: ${python:Provides}
 Description: ArduKey authentication server for 2FA written in Python 3.

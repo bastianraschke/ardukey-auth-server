@@ -5,7 +5,7 @@
 ArduKey authserver
 @author Bastian Raschke <bastian.raschke@posteo.de>
 
-Copyright 2014 Bastian Raschke
+Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
