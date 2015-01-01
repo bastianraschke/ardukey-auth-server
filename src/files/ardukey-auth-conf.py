@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 """
 ArduKey authserver configuration tool
@@ -65,6 +65,7 @@ if ( __name__ == '__main__' ):
 
     parser.add_argument('--add-ardukey', metavar='NAME', help='Adds a new ArduKey.')
     parser.add_argument('--revoke-ardukey', metavar='NAME', help='Revokes a ArduKey.')
+
     parser.add_argument('--version', '-v', action='version', version='ArduKey authserver configuration tool ' + VERSION, help='Prints version and exits.')
 
     ## TODO:

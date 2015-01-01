@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
 ArduKey authserver
 @author Bastian Raschke <bastian.raschke@posteo.de>

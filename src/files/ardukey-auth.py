@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 """
 ArduKey authserver
@@ -19,11 +19,9 @@ from ardukeyauth.Configuration import Configuration
 from ardukeyauth.OTPVerification import OTPVerification
 from ardukeyauth import __version__ as VERSION
 
+
 ## Path to logging file
 loggingFilePath = '/var/log/ardukey-auth.log'
-
-## Path to configuration file
-configurationFilePath = '/etc/ardukey-auth.conf'
 
 class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     """
@@ -118,23 +116,21 @@ try:
     fileHandler.setFormatter(logFormatter)
     logger.addHandler(fileHandler)
 
-except:
+except Exception as e:
     ## The system is able to work without logging
-    sys.stderr.write('Warning: The logger could not be initialized correctly!\n')
+    sys.stderr.write('Error: The logger could not be initialized correctly: ' + str(e) +'\n')
 
 ## Try to read parameters from configuration file
 try:
-    configuration = Configuration(configurationFilePath, readOnly=True)
-
     ## The address the server is running on
-    serverAddress = configuration.readString('Default', 'server_address')
+    serverAddress = Configuration.getInstance().readString('Default', 'server_address')
 
     ## The port the server is listening
-    serverPort = configuration.readInteger('Default', 'server_port')
+    serverPort = Configuration.getInstance().readInteger('Default', 'server_port')
 
-except:
+except Exception as e:
     ## Without configuration the system is not able to work
-    sys.stderr.write('Fatal error: The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
+    sys.stderr.write('Fatal error: The configuration could not be read correctly: ' + str(e) +'\n')
     exit(1)
 
 ## Try to start HTTP server

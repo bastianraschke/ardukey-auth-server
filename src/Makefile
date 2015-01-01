@@ -12,7 +12,7 @@ all:
 
 install:
 
-	## TODO: Better cp -r files/ardukeyauth/* $(DESTDIR)$(libprefix)
+	## TODO: Better?: cp -r files/ardukeyauth/* $(DESTDIR)$(libprefix)
 	install -d $(DESTDIR)$(libprefix)
 	install files/ardukeyauth/* -t $(DESTDIR)$(libprefix)
 
@@ -32,16 +32,15 @@ install:
 	  files/ardukey-auth \
 	  $(DESTDIR)/etc/init.d/ardukey-auth
 
-	install -D --mode 644 --owner www-data --group adm \
+	install -D --mode 600 --owner www-data --group www-data \
 	  files/ardukey-auth.sqlite \
 	  $(DESTDIR)/usr/share/ardukey-auth/ardukey-auth.sqlite
 
-	install -D --mode 644 --owner www-data --group adm \
+	install -D --mode 600 --owner www-data --group adm \
 	  files/ardukey-auth.log \
 	  $(DESTDIR)/var/log/ardukey-auth.log
 
 clean:
-	echo -n > files/ardukey-auth.sqlite
 
 	find files/ -name "__pycache__" -exec rm -rf {} \;
 	find files/ -name "*.pyc" -exec rm -f {} \;

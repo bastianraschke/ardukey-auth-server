@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 """
 ArduKey authserver
@@ -15,6 +15,9 @@ import os
 
 from ardukeyauth.Configuration import Configuration
 
+
+## Path to SQLite database file
+databaseFilePath = '/usr/share/ardukey-auth/ardukey-auth.sqlite'
 
 class SQLiteWrapper(object):
     """
@@ -73,13 +76,8 @@ class SQLiteWrapper(object):
         @return void
         """
 
-        ## TODO: Path to file
-        configurationFilePath = './ardukey-auth.conf'
-
         ## Reads from configuration file
-        configuration = Configuration(configurationFilePath)
-
-        databaseFilePath = configuration.readString('Default', 'database_file')
+        databaseFilePath = Configuration.getInstance().readString('Default', 'database_file')
 
         ## Checks if path/file is writable
         if ( os.access(databaseFilePath, os.W_OK) == False ):
