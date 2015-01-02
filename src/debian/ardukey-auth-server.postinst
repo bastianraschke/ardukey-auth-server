@@ -1,9 +1,9 @@
 #!/bin/sh
 
-## Important: Be sure, the script is aborting if any error occure
 set -e
 
-## Enables service
-update-rc.d ardukey-auth defaults
+## Fix file permission of database file
+chown www-data:www-data /usr/share/ardukey-auth/ardukey-auth.sqlite
+chmod 600 /usr/share/ardukey-auth/ardukey-auth.sqlite
 
-exit 0
+#DEBHELPER#

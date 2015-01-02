@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from distutils.core import setup
 
@@ -9,6 +9,7 @@ setup(
     author          = 'Bastian Raschke',
     author_email    = 'bastian.raschke@posteo.de',
     url             = 'https://sicherheitskritisch.de',
-    license         = 'BSD-2-clause',
+    license         = 'Simplified BSD License',
+    package_dir     = {'': 'files'},
     packages        = ['ardukeyauth'],
 )

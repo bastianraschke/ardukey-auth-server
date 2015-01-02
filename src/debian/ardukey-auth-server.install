@@ -1,2 +1,3 @@
-ardukey-auth.py usr/sbin/ardukey-auth
-ardukey-auth-conf.py usr/bin/ardukey-auth-conf
+files/ardukey-auth usr/sbin/
+files/ardukey-auth-conf usr/bin/
+files/ardukey-auth.sqlite usr/share/ardukey-auth/

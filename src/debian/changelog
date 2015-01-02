@@ -1,5 +1,5 @@
 ardukey-auth (1.0-1) unstable; urgency=low
 
-  * Initial release.
+  * Initial release (Closes: #123456)
 
- -- Bastian Raschke <bastian.raschke@posteo.de>  Tue, 09 Dec 2014 22:14:10 +0100
+ -- Bastian Raschke <bastian.raschke@posteo.de>  Thu, 01 Jan 2015 23:30:15 +0100
