@@ -1,6 +1,6 @@
-- config file writer: do not write everytime
-- write README file
 - Check init.d script
 - Security revision by Nils
 - Create database admin tool
-- fix issue that in Debian packages the files are not owned correctly
+- Improve config parser
+- Write full README file
+- Create man pages

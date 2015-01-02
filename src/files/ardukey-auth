@@ -21,7 +21,7 @@ from ardukeyauth import __version__ as VERSION
 
 
 ## Path to logging file
-loggingFilePath = '/var/log/ardukey-auth.log'
+loggingFilePath = '/var/log/ardukey-auth-server.log'
 
 class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     """

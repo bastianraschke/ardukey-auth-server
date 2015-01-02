@@ -70,5 +70,5 @@ def getInstance():
     """
 
     ## Loads configuration file
-    configurationFilePath = './ardukey-auth.conf'
+    configurationFilePath = '/etc/default/ardukey-auth-server.conf'
     return Configuration(configurationFilePath)

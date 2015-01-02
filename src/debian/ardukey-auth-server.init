@@ -28,6 +28,16 @@ SCRIPTNAME="/etc/init.d/${NAME}"
 ## Define LSB log_* functions
 . /lib/lsb/init-functions
 
+
+
+
+
+
+
+
+
+
+
 case "${1}" in
 
     start)
