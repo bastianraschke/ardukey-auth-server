@@ -5,7 +5,7 @@
 ArduKey authserver
 @author Bastian Raschke <bastian.raschke@posteo.de>
 
-Copyright 2014 Bastian Raschke
+Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
@@ -13,14 +13,15 @@ import sqlite3
 import threading
 import os
 
-import ardukeyauth.configuration
+import ardukeyauth.configreader
+
 
 class SQLiteWrapper(object):
     """
     SQLite database wrapper class.
 
-    @attribute string __filePath
-    The path to the database file.
+    @attribute dict<self> __instances
+    Singleton instances.
 
     @attribute sqlite3.Connection connection
     The database connection.
@@ -29,25 +30,41 @@ class SQLiteWrapper(object):
     The database cursor.
     """
 
-    __filePath = ''
+    __instances = {}
     connection = None
     cursor = None
 
-    def __init__(self, filePath):
+    @classmethod
+    def getInstance(self):
+        """
+        Singleton method
+
+        @return Database
+        """
+
+        ## Gets id of current thread
+        currentThreadId = threading.current_thread().ident
+
+        if ( currentThreadId not in self.__instances ):
+            self.__instances[currentThreadId] = self()
+
+        return self.__instances[currentThreadId]
+
+    def __init__(self):
         """
         Constructor
 
-        @attribute string __filePath
-        The path to the database file.
         """
 
+        ## Gets database file from config
+        configReader = ardukeyauth.configreader.ConfigReader()
+        databaseFilePath = configReader.get('database_file')
+
         ## Checks if path/file is writable
-        if ( os.access(filePath, os.W_OK) == False ):
-            raise ValueError('The database file "' + filePath + '" is not writable!')
+        if ( os.access(databaseFilePath, os.W_OK) == False ):
+            raise ValueError('The database file "' + databaseFilePath + '" is not writable!')
 
-        self.__filePath = filePath
-
-        self.connection = sqlite3.connect(self.__filePath)
+        self.connection = sqlite3.connect(databaseFilePath)
         self.cursor = self.connection.cursor()
 
     def __del__(self):
@@ -56,14 +73,6 @@ class SQLiteWrapper(object):
 
         """
 
-        ## Closes connection
-        ## Important: Any uncommited change will be lost now
+        ## Closes connection (all uncommited changes will be lost)
         if ( self.connection is not None ):
             self.connection.close()
-
-## Loads database file
-databaseFilePath = './ardukey-auth.sqlite'
-database = Database(databaseFilePath)
-
-
-print(ardukeyauth.configuration.getInstance())

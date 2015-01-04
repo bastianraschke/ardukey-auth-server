@@ -5,9 +5,12 @@
 ArduKey authserver
 @author Bastian Raschke <bastian.raschke@posteo.de>
 
-Copyright 2014 Bastian Raschke
+Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
-## Version of ArduKey authserver module
 __version__ = '1.0'
+__copyright__ = 'Bastian Raschke'
+__organization__ = 'Bastian Raschke'
+__license__ = 'Simplified BSD License'
+__authors__ = ['Bastian Raschke']

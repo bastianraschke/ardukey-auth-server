@@ -15,13 +15,11 @@ import json
 import logging
 import sys
 
-from ardukeyauth.Configuration import Configuration
-from ardukeyauth.OTPVerification import OTPVerification
 from ardukeyauth import __version__ as VERSION
+from ardukeyauth.configreader import ConfigReader
+from ardukeyauth.otpverificationrequest import OTPVerificationRequest
+from ardukeyauth.otpverification import OTPVerification
 
-
-## Path to logging file
-loggingFilePath = '/var/log/ardukey-auth-server.log'
 
 class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     """
@@ -70,15 +68,13 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
-            ## Parse all query arguments to dictionary
-            requestParameters = urllib.parse.parse_qs(url.query, keep_blank_values=True)
-
             ## Deligate request to verification class
-            verification = OTPVerification(requestParameters)
+            verification = OTPVerification(OTPVerificationRequest(url.query))
             verificationResponse = verification.getResponse();
 
             ## Send JSON formatted response
-            self.send_output(json.dumps(verificationResponse, indent='\t', sort_keys=True))
+            output = json.dumps(verificationResponse, indent='\t', sort_keys=True)
+            self.send_output(output)
 
         ## Fallback message
         else:
@@ -91,6 +87,17 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_output('<h1>' + self.server_version + '</h1>')
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
             self.send_output('</body></html>')
+
+## Try to parse configuration file
+try:
+    configReader = ConfigReader('/home/bastian/Desktop/ArduKeyAuth/src/debian/ardukey-auth-server.default')
+
+except Exception as e:
+    sys.stderr.write('ArduKey authserver error: ')
+    sys.stderr.write('The config file could not be read correctly:\n')
+    sys.stderr.write(str(e) + '\n\n')
+    sys.stderr.write('Exiting.\n')
+    exit(1)
 
 ## Try to initialize logger
 try:
@@ -110,33 +117,27 @@ try:
     strmHandler.setFormatter(logFormatter)
     logger.addHandler(strmHandler)
 
+    logFilePath = configReader.get('log_file')
+
     ## Logging file handler
-    fileHandler = logging.FileHandler(loggingFilePath)
+    fileHandler = logging.FileHandler(logFilePath)
     fileHandler.setLevel(logging.INFO)
     fileHandler.setFormatter(logFormatter)
     logger.addHandler(fileHandler)
 
 except Exception as e:
-    ## The system is able to work without logging
-    sys.stderr.write('Error: The logger could not be initialized correctly: ' + str(e) +'\n')
+    sys.stderr.write('ArduKey authserver warning: ')
+    sys.stderr.write('The logger could not be initialized correctly:\n')
+    sys.stderr.write(str(e) + '\n\n')
 
-## Try to read parameters from configuration file
-try:
-    ## The address the server is running on
-    serverAddress = Configuration.getInstance().readString('Default', 'server_address')
-
-    ## The port the server is listening
-    serverPort = Configuration.getInstance().readInteger('Default', 'server_port')
-
-except Exception as e:
-    ## Without configuration the system is not able to work
-    sys.stderr.write('Fatal error: The configuration could not be read correctly: ' + str(e) +'\n')
-    exit(1)
+serverAddress = configReader.get('server_address')
+serverPort = int(configReader.get('server_port'))
 
 ## Try to start HTTP server
 try:
     httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
-    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': Listening on ' + serverAddress + ':' + str(serverPort))
+    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
+                'Listening on ' + serverAddress + ':' + str(serverPort))
 
     httpServer.serve_forever()
 

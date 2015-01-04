@@ -12,21 +12,22 @@ All rights reserved.
 import configparser
 import os
 
-class Configuration(object):
+
+class ConfigReader(object):
     """
-    Configuration file parser and writer.
+    Configuration file reader.
 
     @attribute string __filePath
     The path to the configuration file.
 
-    @attribute configparser __configParser
+    @attribute configParser __configParser
     The ConfigParser object.
     """
 
     __filePath = ''
     __configParser = None
 
-    def __init__(self, filePath):
+    def __init__(self, filePath = '/etc/default/ardukey-auth-server.conf'):
         """
         Constructor
 
@@ -43,32 +44,17 @@ class Configuration(object):
         self.__configParser = configparser.ConfigParser()
         self.__configParser.read(self.__filePath)
 
-    def __del__(self):
+    def get(self, key, default = None):
         """
-        Destructor
+        Gets a option by key.
 
-        """
+        @param string key
+        The option key.
 
-        pass
+        @param object default
+        If no option is found, return default value instead.
 
-    def get(self, section, name):
-        """
-        Reads a string value.
-
-        @param string section
-        @param string name
-        @return string
+        @return object
         """
 
-        return self.__configParser.get(section, name)
-
-def getInstance():
-    """
-    Simply delegate the object at module level.
-
-    @return Configuration
-    """
-
-    ## Loads configuration file
-    configurationFilePath = '/etc/default/ardukey-auth-server.conf'
-    return Configuration(configurationFilePath)
+        return self.__configParser.get('DEFAULT', key, fallback=default)

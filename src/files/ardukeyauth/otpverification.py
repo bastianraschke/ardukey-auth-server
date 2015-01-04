@@ -5,19 +5,18 @@
 ArduKey authserver
 @author Bastian Raschke <bastian.raschke@posteo.de>
 
-Copyright 2014 Bastian Raschke
+Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
+import logging
 import time
-import urllib.parse
 import hmac, hashlib
 import re
-import logging
 import binascii
 import Crypto.Cipher.AES as AES
 
-from ardukeyauth.SQLiteWrapper import SQLiteWrapper
+import ardukeyauth.sqlitewrapper
 
 
 class NoAPIKeyAvailableError(Exception):
@@ -48,9 +47,6 @@ class OTPVerification(object):
     """
     ArduKey OTP verification class.
 
-    @attribute logging.Logger __logger
-    The global logging instance.
-
     @attribute string __sharedSecret
     The shared secret of API key.
 
@@ -58,33 +54,26 @@ class OTPVerification(object):
     The response dictionary (the result of verification request).
     """
 
-    __logger = logging.getLogger()
     __sharedSecret = ''
     __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
-    def __init__(self, requestQuery):
+    def __init__(self, verificationRequest):
         """
         Constructor
 
-        @param dict requestQuery
-        The request query as dictionary.
-        """
-
-        ## Deligate request query
-        self.__processRequest(requestQuery)
-
-    def __processRequest(self, requestQuery):
-        """
-        Processes and validates the given request.
-
-        @param dict requestQuery
-        The request to process.
-
-        @return void
+        @param OTPVerificationRequest verificationRequest
+        The atracted request to process.
         """
 
         try:
+            request = verificationRequest.getRequest()
+
             ## Try to get request parameters
+            requestOTP = request['otp']
+            requestNonce = request['nonce']
+            requestAPIKey = request['apiKey']
+
+
             request = {}
             request['otp'] = urllib.parse.quote(requestQuery['otp'][0])
             request['nonce'] = urllib.parse.quote(requestQuery['nonce'][0])
@@ -93,12 +82,19 @@ class OTPVerification(object):
             ## Do not insert request Hmac to request dictionary, to exclude it from Hmac calculation
             requestHmac = urllib.parse.quote(requestQuery['hmac'][0])
 
+
+
+
+
+
+
+
             ## Simply send OTP and nonce back to requester
             self.__response['otp'] = request['otp']
             self.__response['nonce'] = request['nonce']
 
             ## Get shared secret of given API key
-            SQLiteWrapper.getInstance().cursor.execute(
+            ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
                 '''
                 SELECT secret
                 FROM API
@@ -107,12 +103,13 @@ class OTPVerification(object):
                 request['apiKey'],
             ])
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+            rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
 
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                raise NoAPIKeyAvailableError('The given API key "' + request['apiKey'] + '" was not found!')
+                message = 'The given API key "' + request['apiKey'] + '" was not found!'
+                raise NoAPIKeyAvailableError(message)
 
             ## Calculates Hmac of request to verify authenticity
             calculatedRequestHmac = self.__calculateHmac(request)
@@ -120,7 +117,8 @@ class OTPVerification(object):
             ## Compare request Hmac hashes
             ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
             if ( requestHmac != calculatedRequestHmac ):
-                raise BadHmacSignatureError('The request Hmac signature is invalid (expected: ' + calculatedRequestHmac + ')!')
+                message = 'The request Hmac signature is invalid (expected: ' + calculatedRequestHmac + ')!'
+                raise BadHmacSignatureError(message)
 
             ## Try to verify the given OTP
             if ( self.__verifyOTP(request['otp']) == True ):
@@ -131,27 +129,27 @@ class OTPVerification(object):
 
         except NoAPIKeyAvailableError as e:
             ## The API key was not found
-            self.__logger.debug(e)
+            logging.getLogger().debug(e)
             self.__response['status'] = 'API_KEY_NOTFOUND'
 
         except BadHmacSignatureError as e:
             ## The request Hmac signature is bad
-            self.__logger.debug(e)
+            logging.getLogger().debug(e)
             self.__response['status'] = 'INVALID_SIGNATURE'
 
         except CurruptedOTPError as e:
             ## The OTP has an invalid format
-            self.__logger.debug('Currupted OTP: Exception message: ' + str(e))
+            logging.getLogger().debug('Currupted OTP: Exception message: ' + str(e))
             self.__response['status'] = 'CURRUPTED_OTP'
 
         except KeyError as e:
             ## Some request parameters are not okay
-            self.__logger.debug('Missing the request parameter: ' + str(e))
+            logging.getLogger().debug('Missing the request parameter: ' + str(e))
             self.__response['status'] = 'MISSING_PARAMETER'
 
         except Exception:
             ## General unexpected errors
-            self.__logger.error('Unexpected exception occured:', exc_info=1)
+            logging.getLogger().error('Unexpected exception occured:', exc_info=1)
             self.__response['status'] = 'SERVER_ERROR'
 
     def __calculateHmac(self, data):
@@ -227,14 +225,14 @@ class OTPVerification(object):
 
         return hexString
 
-    def __decryptAES(self, aesKey, cipher):
+    def __decryptAES(self, aesKey, cipherText):
         """
         Decrypts (AES-ECB) given cipher text and returns plain text as hexadecimal string.
 
         @param string aesKey
         The used AES key as hexadecimal string.
 
-        @param string cipher
+        @param string cipherText
         The cipher text as hexadecimal string.
 
         @return string
@@ -243,13 +241,13 @@ class OTPVerification(object):
         if ( len(aesKey) != 32 ):
             raise ValueError('The length of the hexadecimal AES key must be 32!')
 
-        if ( len(cipher) != 32 ):
+        if ( len(cipherText) != 32 ):
             raise ValueError('The length of the hexadecimal cipher text must be 32!')
 
         aesKeyBytes = binascii.unhexlify(aesKey.encode('utf-8'))
         aes = AES.new(aesKeyBytes, AES.MODE_ECB)
 
-        cipherBytes = binascii.unhexlify(cipher.encode('utf-8'))
+        cipherBytes = binascii.unhexlify(cipherText.encode('utf-8'))
         plainBytes = aes.decrypt(cipherBytes)
 
         return binascii.hexlify(plainBytes).decode('utf-8')
@@ -323,7 +321,7 @@ class OTPVerification(object):
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
         ## Get required information from database
-        SQLiteWrapper.getInstance().cursor.execute(
+        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
             SELECT secretid, counter, sessioncounter, timestamp, aeskey
             FROM ARDUKEY
@@ -332,7 +330,7 @@ class OTPVerification(object):
             publicId,
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
@@ -341,7 +339,7 @@ class OTPVerification(object):
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
         else:
-            self.__logger.info('The public id "' + publicId + '" was not found in database!')
+            logging.getLogger().info('The public id "' + publicId + '" was not found in database!')
             return False
 
         ## Decrypt encrypted token
@@ -358,9 +356,10 @@ class OTPVerification(object):
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
         ## Format the extracted data for easy debugging
+        ## TODO: Line breaking?
         explainedToken = 'counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X}'
         explainedToken = explainedToken.format(token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
-        self.__logger.debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
+        logging.getLogger().debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
 
         ## Calculate CRC16 checksum of token
         calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
@@ -378,18 +377,18 @@ class OTPVerification(object):
 
             ## Check if session counter has been incremented
             if ( token['sessionCounter'] <= oldSessionCounter ):
-                self.__logger.debug('The session counter is not greater than old value!')
+                logging.getLogger().debug('The session counter is not greater than old value!')
                 return False
 
             ## Check if timestamp has been incremented
             if ( token['timestamp'] <= oldTimestamp ):
-                self.__logger.debug('The timestamp is not greater than old value!')
+                logging.getLogger().debug('The timestamp is not greater than old value!')
                 return False
 
         ## TODO: Security revision
 
         ## Update the current values from OTP to database
-        SQLiteWrapper.getInstance().cursor.execute(
+        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
             SET counter = ?, sessioncounter = ?, timestamp = ?
@@ -400,7 +399,7 @@ class OTPVerification(object):
             token['timestamp'],
             publicId,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().connection.commit()
 
         return True
 
