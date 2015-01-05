@@ -66,28 +66,8 @@ class OTPVerification(object):
         """
 
         try:
-            request = verificationRequest.getRequest()
-
-            ## Try to get request parameters
-            requestOTP = request['otp']
-            requestNonce = request['nonce']
-            requestAPIKey = request['apiKey']
-
-
-            request = {}
-            request['otp'] = urllib.parse.quote(requestQuery['otp'][0])
-            request['nonce'] = urllib.parse.quote(requestQuery['nonce'][0])
-            request['apiKey'] = urllib.parse.quote(requestQuery['apiKey'][0])
-
-            ## Do not insert request Hmac to request dictionary, to exclude it from Hmac calculation
-            requestHmac = urllib.parse.quote(requestQuery['hmac'][0])
-
-
-
-
-
-
-
+            ## Get clean (sanitized) parameters from abstract request class
+            request = verificationRequest.getParameters()
 
             ## Simply send OTP and nonce back to requester
             self.__response['otp'] = request['otp']
@@ -115,8 +95,8 @@ class OTPVerification(object):
             calculatedRequestHmac = self.__calculateHmac(request)
 
             ## Compare request Hmac hashes
-            ## Note: Unfortunatly the hmac.compare_digest() method is only available in Python 3.3+
-            if ( requestHmac != calculatedRequestHmac ):
+            ## Note: The better hmac.compare_digest() method is only available in Python 3.3+
+            if ( verificationRequest.getHmac() != calculatedRequestHmac ):
                 message = 'The request Hmac signature is invalid (expected: ' + calculatedRequestHmac + ')!'
                 raise BadHmacSignatureError(message)
 

@@ -16,11 +16,12 @@ class OTPVerificationRequest(object):
     """
     ArduKey OTP verification request abstration.
 
-    @attribute dict __request
-    The request dictionary.
+    @attribute dict __parameters
+    The request parameters.
     """
 
-    __request = {}
+    __parameters = {}
+    __hmac = ''
 
     def __init__(self, queryString):
         """
@@ -35,13 +36,25 @@ class OTPVerificationRequest(object):
 
         ## Sanitize all given parameters
         for k in parameters:
-            self.__request[k] = urllib.parse.quote(self.request[k][0])
+            self.__parameters[k] = urllib.parse.quote(parameters[k][0])
 
-    def getRequest(self):
+        ## Unset hmac parameter if available
+        self.__hmac = self.__parameters.pop('hmac', '')
+
+    def getParameters(self):
         """
-        Returns the secure (sanitized) request.
+        Returns the request parameters.
 
-        @return dictionary
+        @return dict
         """
 
         return self.__request
+
+    def getHmac(self):
+        """
+        Returns the request Hmac.
+
+        @return str
+        """
+
+        return self.__hmac

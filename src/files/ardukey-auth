@@ -90,7 +90,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
 ## Try to parse configuration file
 try:
-    configReader = ConfigReader('/home/bastian/Desktop/ArduKeyAuth/src/debian/ardukey-auth-server.default')
+    configReader = ConfigReader()
 
 except Exception as e:
     sys.stderr.write('ArduKey authserver error: ')
