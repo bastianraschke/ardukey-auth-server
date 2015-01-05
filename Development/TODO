@@ -1,6 +1,5 @@
 - Check init.d script
 - Security revision by Nils
 - Create database admin tool
-- Improve config parser
 - Write full README file
 - Create man pages

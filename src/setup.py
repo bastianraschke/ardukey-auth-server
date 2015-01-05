@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from distutils.core import setup
 
 setup(
-    name            = 'ardukey-auth',
+    name            = 'ardukeyauth',
     version         = '1.0',
-    description     = 'ArduKey authentication server for 2FA written in Python 3.',
+    description     = 'ArduKey authentication server for 2FA.',
     author          = 'Bastian Raschke',
     author_email    = 'bastian.raschke@posteo.de',
     url             = 'https://sicherheitskritisch.de',

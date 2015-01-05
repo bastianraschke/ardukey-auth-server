@@ -27,7 +27,7 @@ class ConfigReader(object):
     __filePath = ''
     __configParser = None
 
-    def __init__(self, filePath = '/etc/default/ardukey-auth-server.conf'):
+    def __init__(self, filePath = '/etc/ardukey-auth.conf'):
         """
         Constructor
 

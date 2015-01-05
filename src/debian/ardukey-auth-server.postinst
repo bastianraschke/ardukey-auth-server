@@ -2,8 +2,27 @@
 
 set -e
 
-## Fix file permission of database file
-chown www-data:www-data /usr/share/ardukey-auth/ardukey-auth.sqlite
-chmod 600 /usr/share/ardukey-auth/ardukey-auth.sqlite
+if [ "${1}" = "configure" ]; then
+
+    LOG_FILE="/var/log/ardukey-auth.log"
+
+    ## Create log file if not existing
+    if [ ! -f "${LOG_FILE}" ]; then
+        touch "${LOG_FILE}"
+    fi
+
+    ## Set correct permissions to log file
+    chown www-data:adm "${LOG_FILE}"
+    chmod 640 "${LOG_FILE}"
+
+    DATABASE_FILE="/usr/share/ardukey-auth/ardukey-auth.sqlite"
+
+    ## Set correct permissions to database file
+    chown www-data:www-data "${DATABASE_FILE}"
+    chmod 600 "${DATABASE_FILE}"
+
+fi
 
 #DEBHELPER#
+
+exit 0

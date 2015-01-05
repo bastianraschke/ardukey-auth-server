@@ -1,3 +1,4 @@
-files/ardukey-auth usr/sbin/
-files/ardukey-auth-conf usr/bin/
-files/ardukey-auth.sqlite usr/share/ardukey-auth/
+files/ardukey-auth.conf /etc/
+files/ardukey-auth /usr/sbin/
+files/ardukey-auth-conf /usr/bin/
+files/ardukey-auth.sqlite /usr/share/ardukey-auth/

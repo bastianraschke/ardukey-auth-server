@@ -142,11 +142,8 @@ try:
     httpServer.serve_forever()
 
 except KeyboardInterrupt:
-    print('KeyboardInterrupt received, shutting down ArduKey authserver...')
-
-finally:
-    ## Always shutting down HTTP server
     httpServer.socket.close()
+    print('KeyboardInterrupt received, shutting down ArduKey authserver...')
 
 ## Default exit
 exit(0)

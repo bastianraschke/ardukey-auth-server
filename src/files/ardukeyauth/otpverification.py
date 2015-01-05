@@ -29,7 +29,7 @@ class NoAPIKeyAvailableError(Exception):
 
 class BadHmacSignatureError(Exception):
     """
-    Dummy exception class for bad Hmac signature check.
+    Dummy exception class for bad hmac signature check.
 
     """
 
@@ -57,21 +57,21 @@ class OTPVerification(object):
     __sharedSecret = ''
     __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
-    def __init__(self, verificationRequest):
+    def __init__(self, request):
         """
         Constructor
 
-        @param OTPVerificationRequest verificationRequest
-        The atracted request to process.
+        @param OTPVerificationRequest request
+        The abstract request to process.
         """
 
         try:
-            ## Get clean (sanitized) parameters from abstract request class
-            request = verificationRequest.getParameters()
+            ## Get sanitized parameters from abstract request class
+            requestParameters = request.getParameters()
 
             ## Simply send OTP and nonce back to requester
-            self.__response['otp'] = request['otp']
-            self.__response['nonce'] = request['nonce']
+            self.__response['otp'] = requestParameters['otp']
+            self.__response['nonce'] = requestParameters['nonce']
 
             ## Get shared secret of given API key
             ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
@@ -80,7 +80,7 @@ class OTPVerification(object):
                 FROM API
                 WHERE id = ? AND enabled = 1
                 ''', [
-                request['apiKey'],
+                requestParameters['apiKey'],
             ])
 
             rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
@@ -88,20 +88,20 @@ class OTPVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                message = 'The given API key "' + request['apiKey'] + '" was not found!'
+                message = 'The given API key "' + requestParameters['apiKey'] + '" was not found!'
                 raise NoAPIKeyAvailableError(message)
 
-            ## Calculates Hmac of request to verify authenticity
-            calculatedRequestHmac = self.__calculateHmac(request)
+            ## Calculates hmac of request to verify authenticity
+            requestHmac = self.__calculateHmac(requestParameters)
 
-            ## Compare request Hmac hashes
+            ## Compare request hmac hashes
             ## Note: The better hmac.compare_digest() method is only available in Python 3.3+
-            if ( verificationRequest.getHmac() != calculatedRequestHmac ):
-                message = 'The request Hmac signature is invalid (expected: ' + calculatedRequestHmac + ')!'
+            if ( request.getHmac() != requestHmac ):
+                message = 'The request hmac signature is invalid (expected: ' + requestHmac + ')!'
                 raise BadHmacSignatureError(message)
 
             ## Try to verify the given OTP
-            if ( self.__verifyOTP(request['otp']) == True ):
+            if ( self.__verifyOTP(requestParameters['otp']) == True ):
                 self.__response['status'] = 'OK'
 
             else:
@@ -113,7 +113,7 @@ class OTPVerification(object):
             self.__response['status'] = 'API_KEY_NOTFOUND'
 
         except BadHmacSignatureError as e:
-            ## The request Hmac signature is bad
+            ## The request hmac signature is bad
             logging.getLogger().debug(e)
             self.__response['status'] = 'INVALID_SIGNATURE'
 
@@ -134,7 +134,7 @@ class OTPVerification(object):
 
     def __calculateHmac(self, data):
         """
-        Calculates Hmac of given dictionary and returns it as a hexadecimal string.
+        Calculates hmac of given dictionary and returns it as a hexadecimal string.
 
         @param dict data
         The dictionary that contains data.
@@ -148,18 +148,18 @@ class OTPVerification(object):
 
         ## Checks if shared secret is given
         if ( len(self.__sharedSecret) == 0 ):
-            raise ValueError('No shared secret given to perform Hmac calculation!')
+            raise ValueError('No shared secret given to perform hmac calculation!')
 
         dataString = ''
 
-        ## Sort dictionary by key, to calculate the same Hmac always
+        ## Sort dictionary by key, to calculate the same hmac always
         for k in sorted(data):
             dataString += str(data[k])
 
         sharedSecret = self.__sharedSecret.encode('utf-8')
         dataString = dataString.encode('utf-8')
 
-        ## Calculate Hmac of payload
+        ## Calculate hmac of payload
         return hmac.new(sharedSecret, msg=dataString, digestmod=hashlib.sha256).hexdigest()
 
     def __decodeArduHex(self, arduhexString):
@@ -319,7 +319,7 @@ class OTPVerification(object):
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
         else:
-            logging.getLogger().info('The public id "' + publicId + '" was not found in database!')
+            logging.getLogger().debug('The public id "' + publicId + '" was not found in database!')
             return False
 
         ## Decrypt encrypted token
@@ -394,14 +394,12 @@ class OTPVerification(object):
         self.__response['time'] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
         ## Unset old hmac
-        ## Important: Do not remove element, cause if no Hmac signature is possible,
+        ## Note: Do not remove element, cause if no hmac signature is possible,
         ## the element must be available in response nevertheless!
         self.__response['hmac'] = ''
 
-        ## Only perform operation if shared secret is available
+        ## Only perform hmac operation if shared secret is available
         if ( len(self.__sharedSecret) > 0 ):
-
-            ## Calculate Hmac of current response
             self.__response['hmac'] = self.__calculateHmac(self.__response)
 
         return self.__response

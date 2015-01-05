@@ -26,6 +26,7 @@ Section: net
 Depends: python3,
          python-argparse,
          python3-ardukey-auth (= ${binary:Version}),
+         lsb-base (>= 3.2-14),
          ${python3:Depends}, ${misc:Depends}
 Description: ArduKey authentication server for 2FA written in Python 3.
  Lorem ipsum

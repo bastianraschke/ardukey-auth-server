@@ -48,7 +48,7 @@ class OTPVerificationRequest(object):
         @return dict
         """
 
-        return self.__request
+        return self.__parameters
 
     def getHmac(self):
         """
