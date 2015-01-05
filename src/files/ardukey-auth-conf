@@ -11,15 +11,28 @@ All rights reserved.
 
 import argparse
 
-from ardukeyauth.Configuration import Configuration
 from ardukeyauth import __version__ as VERSION
+from ardukeyauth.configreader import ConfigReader
 
-## Path to configuration file
-configurationFilePath = '/etc/ardukey-auth.conf'
+## Try to parse configuration file
+try:
+    configReader = ConfigReader()
 
+except Exception as e:
+    sys.stderr.write('ArduKey authserver error: ')
+    sys.stderr.write('The config file could not be read correctly:\n')
+    sys.stderr.write(str(e) + '\n\n')
+    sys.stderr.write('Exiting.\n')
+    exit(1)
 
+def listArduKeys():
+        """
+        Lists all available ArduKeys.
 
+        @return boolean
+        """
 
+        return True
 
 def addArduKey(publicId, secretId, aesKey):
         """
@@ -39,30 +52,53 @@ def addArduKey(publicId, secretId, aesKey):
 
         return True
 
+def revokeArduKey(publicId):
+        """
+        Revokes a ArduKey.
 
+        @param string publicId
+        The public id of ArduKey.
 
+        @return boolean
+        """
 
-"""
-## Try to read parameters from configuration file
-try:
-    configuration = Configuration(configurationFilePath, readOnly=True)
+        return True
 
-    ## The address the server is running on
-    serverAddress = configuration.readString('Default', 'server_address')
+def listAPIKeys():
+        """
+        Lists all available API keys.
 
-    ## The port the server is listening
-    serverPort = configuration.readInteger('Default', 'server_port')
+        @return boolean
+        """
 
-except:
-    ## Without configuration the system is not able to work
-    sys.stderr.write('Fatal error: The configuration file "' + configurationFilePath + '" could not be read correctly!\n')
-    exit(1)
-"""
+        return True
+
+def generateAPIKey():
+        """
+        Generates a new API key.
+
+        @return boolean
+        """
+
+        return True
+
+def revokeAPIKey(apiKey):
+        """
+        Revokes a API key.
+
+        @param string apiKey
+        The id of API key.
+
+        @return boolean
+        """
+
+        return True
 
 if ( __name__ == '__main__' ):
 
     parser = argparse.ArgumentParser(description='ArduKey authserver configuration tool ' + VERSION)
 
+    parser.add_argument('--list-ardukeys', metavar='NAME', help='Adds a new ArduKey.')
     parser.add_argument('--add-ardukey', metavar='NAME', help='Adds a new ArduKey.')
     parser.add_argument('--revoke-ardukey', metavar='NAME', help='Revokes a ArduKey.')
 

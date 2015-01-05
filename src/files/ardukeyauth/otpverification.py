@@ -326,7 +326,8 @@ class OTPVerification(object):
         decryptedToken = self.__decryptAES(aesKey, encryptedToken)
 
         ## Extract data from decrypted token
-        ## Note: The data in token must be interpreted as Little endian (eg. 'aabb' becomes 0xbbaa)
+        ## Note: The data in token must be interpreted as little endian:
+        ## The string 'aabb' would be become 0xbbaa for example.
         token = {}
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
@@ -336,9 +337,13 @@ class OTPVerification(object):
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
         ## Format the extracted data for easy debugging
-        ## TODO: Line breaking?
-        explainedToken = 'counter = 0x{0:0>4X}; session = 0x{1:0>2X}; timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; crc = 0x{4:0>4X}'
-        explainedToken = explainedToken.format(token['counter'], token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
+        explainedToken = 'counter = 0x{0:0>4X}; session = 0x{1:0>2X}; ' + \
+            'timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; ' + \
+            'crc = 0x{4:0>4X}'
+
+        explainedToken = explainedToken.format(token['counter'],
+            token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
+
         logging.getLogger().debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
 
         ## Calculate CRC16 checksum of token
