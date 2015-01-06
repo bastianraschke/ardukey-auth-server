@@ -1,2 +1,2 @@
-Manual debugging start of server:
+## Manual debugging start of server:
 ~# sudo -u www-data -g www-data python3 ./ardukey-auth --debug

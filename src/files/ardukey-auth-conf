@@ -9,21 +9,15 @@ Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
+import sys
+import re
+import string, random
 import argparse
 
 from ardukeyauth import __version__ as VERSION
 from ardukeyauth.configreader import ConfigReader
+from ardukeyauth.sqlitewrapper import SQLiteWrapper
 
-## Try to parse configuration file
-try:
-    configReader = ConfigReader()
-
-except Exception as e:
-    sys.stderr.write('ArduKey authserver error: ')
-    sys.stderr.write('The config file could not be read correctly:\n')
-    sys.stderr.write(str(e) + '\n\n')
-    sys.stderr.write('Exiting.\n')
-    exit(1)
 
 def listArduKeys():
         """
@@ -50,6 +44,60 @@ def addArduKey(publicId, secretId, aesKey):
         @return boolean
         """
 
+        publicId = publicId.lower()
+        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+
+        if ( publicIdRegexMatch == None ):
+            sys.stderr.write('Error: The given public id is not valid!\n')
+            return False
+
+        secretId = secretId.lower()
+        secretIdRegexMatch = re.match('^([0123456789abcdef]{12})$', secretId)
+
+        if ( secretIdRegexMatch == None ):
+            sys.stderr.write('Error: The given secret id is not valid!\n')
+            return False
+
+        aesKey = secretId.lower()
+        aesKeyRegexMatch = re.match('^([0123456789abcdef]{32})$', aesKey)
+
+        if ( secretIdRegexMatch == None ):
+            sys.stderr.write('Error: The given AES key is not valid!\n')
+            return False
+
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                SELECT publicid
+                FROM ARDUKEY
+                WHERE publicid = ?
+                ''', [
+                publicId,
+            ])
+
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+            if ( len(rows) > 0 ):
+                sys.stderr.write('Error: The ArduKey already exists!\n')
+                return False
+
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                INSERT INTO ARDUKEY(publicid, secretid, aeskey, created)
+                VALUES(?, ?, ?, DATETIME());
+                ''', [
+                publicId,
+                secretId,
+                aesKey,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except:
+            sys.stderr.write('Error: The ArduKey could not be created!\n')
+            sys.stderr.write('The database seems to be currupted!\n')
+            return False
+
+        print('The ArduKey has been created successfully.')
         return True
 
 def revokeArduKey(publicId):
@@ -62,6 +110,51 @@ def revokeArduKey(publicId):
         @return boolean
         """
 
+        publicId = publicId.lower()
+        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+
+        if ( publicIdRegexMatch == None ):
+            sys.stderr.write('Error: The given public id is not valid!')
+            return False
+
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                SELECT enabled
+                FROM ARDUKEY
+                WHERE publicid = ?
+                ''', [
+                publicId,
+            ])
+
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+            if ( len(rows) == 0 ):
+                sys.stderr.write('Error: The ArduKey does not exists!\n')
+                return False
+
+            enabled = rows[0][0]
+
+            if ( enabled == 0 ):
+                sys.stderr.write('Error: The ArduKey is still revoked!\n')
+                return False
+
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                UPDATE ARDUKEY
+                SET enabled = 0
+                WHERE publicid = ?
+                ''', [
+                publicId,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except:
+            sys.stderr.write('Error: The ArduKey could not be revoked!\n')
+            sys.stderr.write('The database seems to be currupted!\n')
+            return False
+
+        print('The ArduKey has been revoked successfully.')
         return True
 
 def listAPIKeys():
@@ -80,22 +173,100 @@ def generateAPIKey():
         @return boolean
         """
 
+        sharedSecret = ''.join(random.SystemRandom().choice(
+            string.ascii_uppercase + string.digits) for _ in range(64))
+
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                INSERT INTO API(secret, created)
+                VALUES(?, DATETIME());
+                ''', [
+                sharedSecret,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except:
+            sys.stderr.write('Error: The API key could not be generated!\n')
+            sys.stderr.write('The database seems to be currupted!\n')
+            return False
+
+        print('The API key has been generated successfully.')
         return True
 
-def revokeAPIKey(apiKey):
+def revokeAPIKey(apiId):
         """
         Revokes a API key.
 
-        @param string apiKey
-        The id of API key.
+        @param string apiId
+        The id of the API key.
 
         @return boolean
         """
 
+        if ( type(apiId) != int ):
+            sys.stderr.write('Error: The given API id is not valid!\n')
+            return False
+
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                SELECT enabled
+                FROM API
+                WHERE id = ?
+                ''', [
+                apiId,
+            ])
+
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+            if ( len(rows) == 0 ):
+                sys.stderr.write('Error: The API key does not exists!\n')
+                return False
+
+            enabled = rows[0][0]
+
+            if ( enabled == 0 ):
+                sys.stderr.write('Error: The API key is still revoked!\n')
+                return False
+
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                UPDATE API
+                SET enabled = 0
+                WHERE id = ?
+                ''', [
+                apiId,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except:
+            sys.stderr.write('Error: The API key could not be revoked!\n')
+            sys.stderr.write('The database seems to be currupted!\n')
+            return False
+
+        print('The API key has been revoked successfully.')
         return True
+
 
 if ( __name__ == '__main__' ):
 
+    ## Try to parse configuration file
+    try:
+        configReader = ConfigReader()
+
+    except Exception as e:
+        sys.stderr.write('ArduKey authserver configuration tool error: ')
+        sys.stderr.write('The config file could not be read correctly:\n')
+        sys.stderr.write(str(e) + '\n\n')
+        sys.stderr.write('Exiting.\n')
+        exit(1)
+
+    #print(addArduKey('cccccccccccd', 'B0D4A2D69BC4', '7A1858592FCB76BD5EB2685421AED45E'))
+    #print(revokeArduKey('cccccccccccb'))
+    pass
+
+    """
     parser = argparse.ArgumentParser(description='ArduKey authserver configuration tool ' + VERSION)
 
     parser.add_argument('--list-ardukeys', metavar='NAME', help='Adds a new ArduKey.')
@@ -103,12 +274,6 @@ if ( __name__ == '__main__' ):
     parser.add_argument('--revoke-ardukey', metavar='NAME', help='Revokes a ArduKey.')
 
     parser.add_argument('--version', '-v', action='version', version='ArduKey authserver configuration tool ' + VERSION, help='Prints version and exits.')
-
-    ## TODO:
-    ## list ArduKeys
-    ## generate API key
-    ## revoke API key
-    ## list API keys
 
     args = vars(parser.parse_args())
 
@@ -118,3 +283,4 @@ if ( __name__ == '__main__' ):
         print('jo')
     else:
         parser.print_help()
+    """
