@@ -351,7 +351,7 @@ class OTPVerification(object):
 
         ## Compare the given OTP checksum and calculated checksum
         if ( token['crc'] != calculatedCRC ):
-            raise CurruptedOTPError('The checksum of he OTP is not correct!')
+            raise CurruptedOTPError('The checksum of the OTP is not correct!')
 
         ## Check if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):

@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(
-    name            = 'ardukeyauth',
+    name            = 'ArduKey Auth',
     version         = '1.0',
     description     = 'ArduKey authentication server for 2FA.',
     author          = 'Bastian Raschke',
