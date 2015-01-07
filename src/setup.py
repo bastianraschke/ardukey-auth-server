@@ -5,7 +5,7 @@ from distutils.core import setup
 setup(
     name            = 'ArduKey Auth',
     version         = '1.0',
-    description     = 'ArduKey authentication server for 2FA.',
+    description     = 'ArduKey authentication server written in Python 3.',
     author          = 'Bastian Raschke',
     author_email    = 'bastian.raschke@posteo.de',
     url             = 'https://sicherheitskritisch.de',

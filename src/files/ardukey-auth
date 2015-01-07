@@ -14,6 +14,7 @@ import urllib.parse
 import json
 import logging
 import sys
+import traceback
 
 from ardukeyauth import __version__ as VERSION
 from ardukeyauth.configreader import ConfigReader
@@ -92,11 +93,9 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 try:
     configReader = ConfigReader()
 
-except Exception as e:
-    sys.stderr.write('ArduKey authserver error: ')
-    sys.stderr.write('The config file could not be read correctly:\n')
-    sys.stderr.write(str(e) + '\n\n')
-    sys.stderr.write('Exiting.\n')
+except:
+    sys.stderr.write('Error: The config file could not be read correctly!\n\n')
+    sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
     exit(1)
 
 ## Try to initialize logger
