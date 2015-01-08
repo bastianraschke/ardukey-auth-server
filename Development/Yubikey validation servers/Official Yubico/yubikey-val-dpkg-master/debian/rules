@@ -1,0 +1,10 @@
+#!/usr/bin/make -f
+
+override_dh_auto_build:
+# There is no default 'make' target for this package
+
+override_dh_installinit:
+	dh_installinit --name ykval-queue
+
+%:
+	dh $@ 

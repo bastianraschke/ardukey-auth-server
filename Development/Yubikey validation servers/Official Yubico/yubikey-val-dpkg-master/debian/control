@@ -1,0 +1,39 @@
+Source: yubikey-val
+Section: net
+Priority: extra
+Maintainer: Debian Authentication Maintainers <pkg-auth-maintainers@lists.alioth.debian.org>
+Uploaders: Simon Josefsson <simon@josefsson.org>, Klas Lindfors <klas@yubico.com>, Dain Nilsson <dain@yubico.com>, Daniel Pocock <daniel@pocock.com.au>
+Build-Depends: debhelper (>= 9),
+	       po-debconf
+Standards-Version: 3.9.6
+Homepage: https://developers.yubico.com/yubikey-val/
+Vcs-Browser: https://github.com/Yubico/yubikey-val-dpkg
+Vcs-Git: git://github.com/Yubico/yubikey-val-dpkg.git
+
+Package: yubikey-val
+Architecture: all
+Depends: ${misc:Depends},
+	 apache2,
+	 php5,
+	 php5-cli,
+	 php5-curl,
+	 php-pear,
+	 mysql-server | postgresql,
+	 php5-mysql | php5-pgsql,
+	 dbconfig-common
+Recommends: mysql-client | postgresql-client
+Suggests: yubikey-ksm | yhsm-yubikey-ksm
+Description: One-Time Password (OTP) validation server for YubiKey tokens
+ YubiKeys are USB tokens that act like keyboards and generate one-time
+ passwords.  This package contains a server written in PHP for use with
+ Apache to validate YubiKey OTPs.  The architecture is that a set of
+ validation servers manage the token counters and respond to OTP requests
+ from clients, and utilize a set of back-end YubiKey Key Storage
+ Module (KSM) servers to perform the actual AES key decryption.  The
+ protocols are openly published.  There are two implementations of the
+ KSM available: yubikey-ksm (PHP, secrets on disk in database) and
+ yhsm-yubikey-ksm (Python, for use with secrets protected by the YubiHSM
+ hardware).  Sometimes the KSM runs on another server than the
+ validation server, but it is possible to run both on the same
+ machine.  After installing and configuring this package you will have
+ a YubiKey validation server up and running via Apache.

@@ -1,0 +1,71 @@
+yubikey-val (2.27-2) unstable; urgency=low
+
+  [ Klas Lindfors ]
+  * Fix watch file.
+
+  [ Simon Josefsson ]
+  * Change my email.
+
+ -- Simon Josefsson <simon@josefsson.org>  Sat, 27 Dec 2014 22:58:58 +0100
+
+yubikey-val (2.27-1) unstable; urgency=medium
+
+  [ Klas Lindfors ]
+  * New upstream release.
+
+  [ Simon Josefsson ]
+  * Update upstream-signing-key.pgp.
+
+ -- Simon Josefsson <simon@yubico.com>  Wed, 01 Oct 2014 18:09:39 +0200
+
+yubikey-val (2.26-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Klas Lindfors <klas@yubico.com>  Wed, 24 Sep 2014 10:56:39 +0200
+
+yubikey-val (2.25-2) unstable; urgency=medium
+
+  [ Klas Lindfors ]
+  * Fix postgres dbconfig.
+
+  [ Simon Josefsson]
+  * Bump Standards-Version to 3.9.6.
+
+ -- Klas Lindfors <klas@yubico.com>  Fri, 19 Sep 2014 16:13:22 +0200
+
+yubikey-val (2.25-1) unstable; urgency=medium
+
+  [ Simon Josefsson]
+  * Fix Homepage URL.
+  * New upstream release.
+  * Fix watch file and add upstream-signing-key.pgp.
+  * Fix URLs in README.Debian.
+  * Reduce Uploaders.
+
+  [ Dain Nilsson ]
+  * Fixes for Apache 2.4.
+  * Bump Standards-Version to 3.9.5.
+
+ -- Simon Josefsson <simon@yubico.com>  Thu, 04 Sep 2014 13:09:28 +0200
+
+yubikey-val (2.24-1) unstable; urgency=low
+
+  * New upstream release.
+  * Improve README.source.
+  * Change my uploader email address.
+
+ -- Simon Josefsson <simon@yubico.com>  Wed, 18 Sep 2013 17:12:49 +0200
+
+yubikey-val (2.23-2) unstable; urgency=low
+
+  [ Dain Nilsson ]
+  * Removed debconf note (closes: #710844).
+
+ -- Simon Josefsson <simon@josefsson.org>  Thu, 05 Sep 2013 20:20:26 +0200
+
+yubikey-val (2.23-1) unstable; urgency=low
+
+  * Initial package (closes: #699530).
+
+ -- Dain Nilsson <dain@yubico.com>  Wed, 17 Apr 2013 17:29:02 +0200

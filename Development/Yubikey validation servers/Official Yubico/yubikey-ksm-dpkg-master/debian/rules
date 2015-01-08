@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+override_dh_auto_clean:
+# This only removes the man pages, which we would like to keep.
+
+override_dh_auto_build:
+# There is no default 'make' target for this package.
+
+# Build architecture-dependent files here.
+binary-arch: install
+# We have nothing to do.
+
+# Build architecture-independent files here.
+binary-indep: install
+	dh $@
+
+binary: binary-indep binary-arch
+
+.PHONY: binary-indep binary-arch binary build
+
+%:
+	dh $@

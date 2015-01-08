@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/prerm
+dbc_go yubikey-val $@
+
+case "$1" in
+    remove|deconfigure)
+        if [ -x /etc/init.d/ykval-queue ]; then
+                if [ -x /usr/sbin/invoke-rc.d ]; then
+                        invoke-rc.d ykval-queue stop
+                else
+                        /etc/init.d/ykval-queue stop
+                fi
+        fi
+        ;;
+    upgrade)
+        ;;
+    failed-upgrade)
+        ;;
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 0
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

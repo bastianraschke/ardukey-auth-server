@@ -1,0 +1,7 @@
+files
+yubikey-val.debhelper.log
+yubikey-val.postinst.debhelper
+yubikey-val.postrm.debhelper
+yubikey-val.prerm.debhelper
+yubikey-val.substvars
+yubikey-val/
