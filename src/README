@@ -2,8 +2,10 @@
 ~# sudo /etc/init.d/ardukey-auth-server stop
 ~# sudo -u www-data -g www-data ardukey-auth --debug
 
-## Add a ArduKey
+## Add an ArduKey
 ~# ardukey-auth-conf --add-ardukey cccccccccccd b0d4a2d69bc4 7a1858592fcb76bd5eb2685421aed45e
 
 ## Generate new API key
 ~# ardukey-auth-conf --generate-apikey
+
+## Check request:
