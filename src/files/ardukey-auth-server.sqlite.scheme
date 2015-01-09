@@ -1,19 +1,22 @@
+## SQLite does not have high specialized datatypes, only the basic types.
+## Additionally see: https://www.sqlite.org/datatype3.html
+
 CREATE TABLE API
 (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   secret TEXT(64) NOT NULL,
   created DATE NOT NULL,
-  enabled NUMBER(1) NOT NULL DEFAULT 1
+  enabled INTEGER(1) NOT NULL DEFAULT 1
 );
 
 CREATE TABLE ARDUKEY
 (
   publicid TEXT(12) PRIMARY KEY,
   secretid TEXT(12) NOT NULL,
-  counter NUMBER(5) NOT NULL DEFAULT 0,
-  sessioncounter NUMBER(3) NOT NULL DEFAULT 0,
-  timestamp NUMBER(8) DEFAULT 0,
+  counter INTEGER(5) NOT NULL DEFAULT 0,
+  sessioncounter INTEGER(3) NOT NULL DEFAULT 0,
+  timestamp INTEGER(8) DEFAULT 0,
   aeskey TEXT(32) NOT NULL,
   created DATE NOT NULL,
-  enabled NUMBER(1) NOT NULL DEFAULT 1
+  enabled INTEGER(1) NOT NULL DEFAULT 1
 );
