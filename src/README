@@ -1,11 +1,48 @@
-## Manual debugging start of server:
-~# sudo /etc/init.d/ardukey-auth-server stop
-~# sudo -u www-data -g www-data ardukey-auth --debug
+## ArduKey authserver
+## written by Bastian Raschke
+##
 
-## Add an ArduKey
+
+## Installation
+##
+
+First you have to install the server via your package manager. For example:
+
+~# apt-get install ardukey-auth-server
+
+Important note: You need to add the "PM Codeworks" repository first. See
+http://www.pm-codeworks.de/repository.html for the instructions.
+
+
+## Optional: Manual package build
+##
+
+If you don't want to use pre-build packages, you can easyly build your own
+packages using the tool "debuild":
+
+~$ debuild
+
+After that, the generated packages can be found in the upper directory. You can
+install the packages with "dpkg":
+
+~# dpkg -i ../*.deb
+
+
+## Configuration and test
+##
+
+First add an ArduKey with following command:
+
 ~# ardukey-auth-conf --add-ardukey cccccccccccd b0d4a2d69bc4 7a1858592fcb76bd5eb2685421aed45e
 
-## Generate new API key
+So an ArduKey with public id "cccccccccccd", the secret id "b0d4a2d69bc4" and
+the AES key "7a1858592fcb76bd5eb2685421aed45e" will be added.
+
+Now, generate a new API id to be able to sign your requests to auth server:
+
 ~# ardukey-auth-conf --generate-apikey
 
-## Check request:
+The command outputs the "API id" and the "shared secret". Every service who
+wants to communicate with the auth server needs his own API key (in the test
+case *you*, but normally every administrator who sets up a PAM module for his
+users that should use ArduKeys).
