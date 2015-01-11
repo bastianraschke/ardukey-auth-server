@@ -17,7 +17,6 @@ import string, random
 import argparse
 
 from ardukeyauth import __version__ as VERSION
-from ardukeyauth.configreader import ConfigReader
 from ardukeyauth.sqlitewrapper import SQLiteWrapper
 
 
@@ -269,15 +268,6 @@ if ( __name__ == '__main__' ):
     ## Checks if user is root
     if ( os.geteuid() != 0 ):
         sys.stderr.write('Error: You need to have root privileges!\n')
-        sys.exit(1)
-
-    ## Try to parse configuration file
-    try:
-        configReader = ConfigReader()
-
-    except:
-        sys.stderr.write('Error: The config file could not be read correctly:\n\n')
-        sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 
     parser = argparse.ArgumentParser(add_help=True,
