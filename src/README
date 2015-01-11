@@ -28,7 +28,7 @@ install the packages with "dpkg":
 ~# dpkg -i ../*.deb
 
 
-## Configuration and test
+## Maintaining
 ##
 
 First add an ArduKey with following command:
@@ -42,7 +42,27 @@ Now, generate a new API id to be able to sign your requests to auth server:
 
 ~# ardukey-auth-conf --generate-apikey
 
-The command outputs the "API id" and the "shared secret". Every service who
-wants to communicate with the auth server needs his own API key (in the test
-case *you*, but normally every administrator who sets up a PAM module for his
-users that should use ArduKeys).
+The command outputs the "API id" and the "Shared secret". Every system/service
+that wants to communicate with the auth server needs its *own* API key!
+
+For example an administrator who wants to set up an ArduKey PAM module on his
+server needs one API key to be able to use auth server.
+
+
+## Test request
+##
+
+Now you can test the server. Send a HTTP GET request to:
+
+http://127.0.0.1:8080/ardukeyotp/1.0/verify
+
+with the follwing parameters:
+
+Parameter | Description
+----------------------------------------------------
+otp       | The one-time-pad type by an ArduKey.
+nonce     | A random string, to make request unique.
+apiId     | The API id, to identify the API key.
+hmac      | The signature of this request.
+
+Example request:

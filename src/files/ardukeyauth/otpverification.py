@@ -80,7 +80,7 @@ class OTPVerification(object):
                 FROM API
                 WHERE id = ? AND enabled = 1
                 ''', [
-                requestParameters['apiKey'],
+                requestParameters['apiId'],
             ])
 
             rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
@@ -88,7 +88,7 @@ class OTPVerification(object):
             if ( len(rows) > 0 ):
                 self.__sharedSecret = rows[0][0]
             else:
-                message = 'The given API key "' + requestParameters['apiKey'] + '" was not found!'
+                message = 'The given API key "' + requestParameters['apiId'] + '" was not found!'
                 raise NoAPIKeyAvailableError(message)
 
             ## Calculates hmac of request to verify authenticity
