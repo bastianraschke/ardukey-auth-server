@@ -89,60 +89,61 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
             self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
             self.send_output('</body></html>')
 
-## Try to parse configuration file
-try:
-    configReader = ConfigReader()
 
-except:
-    sys.stderr.write('Error: The config file could not be read correctly!\n\n')
-    sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
-    exit(1)
+if ( __name__ == '__main__' ):
 
-## Try to initialize logger
-try:
-    logger = logging.getLogger()
+    ## Try to parse configuration file
+    try:
+        configReader = ConfigReader()
 
-    ## Enable debugging if "--debug" flag is given
-    if ( '--debug' in sys.argv ):
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+        logFilePath = configReader.get('log_file')
+        serverAddress = configReader.get('server_address')
+        serverPort = configReader.get('server_port')
 
-    logFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    except:
+        sys.stderr.write('Error: The config file could not be read correctly:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        sys.exit(1)
 
-    ## Stream output handler
-    strmHandler = logging.StreamHandler()
-    strmHandler.setLevel(logging.DEBUG)
-    strmHandler.setFormatter(logFormatter)
-    logger.addHandler(strmHandler)
+    ## Try to initialize logger
+    try:
+        logger = logging.getLogger()
 
-    logFilePath = configReader.get('log_file')
+        ## Enable debugging if "--debug" flag is given
+        if ( '--debug' in sys.argv ):
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
 
-    ## Logging file handler
-    fileHandler = logging.FileHandler(logFilePath)
-    fileHandler.setLevel(logging.INFO)
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
+        logFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-except Exception as e:
-    sys.stderr.write('ArduKey authserver warning: ')
-    sys.stderr.write('The logger could not be initialized correctly:\n')
-    sys.stderr.write(str(e) + '\n\n')
+        ## Stream output handler
+        strmHandler = logging.StreamHandler()
+        strmHandler.setLevel(logging.DEBUG)
+        strmHandler.setFormatter(logFormatter)
+        logger.addHandler(strmHandler)
 
-serverAddress = configReader.get('server_address')
-serverPort = int(configReader.get('server_port'))
+        ## Logging file handler
+        fileHandler = logging.FileHandler(logFilePath)
+        fileHandler.setLevel(logging.INFO)
+        fileHandler.setFormatter(logFormatter)
+        logger.addHandler(fileHandler)
 
-## Try to start HTTP server
-try:
-    httpServer = http.server.HTTPServer((serverAddress, serverPort), ArduKeyAuthserver)
-    logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
-                'Listening on ' + serverAddress + ':' + str(serverPort))
+    except:
+        sys.stderr.write('Warning: The logger could not be initialized correctly!\n\n')
+        sys.stderr.write(traceback.format_exc())
 
-    httpServer.serve_forever()
+    ## Try to start HTTP server
+    try:
+        httpServer = http.server.HTTPServer((serverAddress, int(serverPort)), ArduKeyAuthserver)
+        logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
+                    'Listening on ' + serverAddress + ':' + serverPort)
 
-except KeyboardInterrupt:
-    httpServer.socket.close()
-    print('KeyboardInterrupt received, shutting down ArduKey authserver...')
+        httpServer.serve_forever()
 
-## Default exit
-exit(0)
+    except KeyboardInterrupt:
+        httpServer.socket.close()
+        print('KeyboardInterrupt received, shutting down ArduKey authserver...')
+
+    ## Default exit
+    sys.exit(0)

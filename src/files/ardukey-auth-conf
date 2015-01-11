@@ -98,8 +98,8 @@ def addArduKey(publicId, secretId, aesKey):
 
         except:
             sys.stderr.write('Error: The ArduKey could not be created!\n')
-            sys.stderr.write('The database operation failed!\n\n')
-            sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
             return False
 
         print('The ArduKey has been created successfully.')
@@ -156,8 +156,8 @@ def revokeArduKey(publicId):
 
         except:
             sys.stderr.write('Error: The ArduKey could not be revoked!\n')
-            sys.stderr.write('The database operation failed!\n\n')
-            sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
             return False
 
         print('The ArduKey has been revoked successfully.')
@@ -199,8 +199,8 @@ def generateAPIKey():
 
         except:
             sys.stderr.write('Error: The API key could not be generated!\n')
-            sys.stderr.write('The database operation failed!\n\n')
-            sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
             return False
 
         print('The API key has been generated successfully.')
@@ -256,8 +256,8 @@ def revokeAPIKey(apiId):
 
         except:
             sys.stderr.write('Error: The API key could not be revoked!\n')
-            sys.stderr.write('The database operation failed!\n\n')
-            sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
             return False
 
         print('The API key has been revoked successfully.')
@@ -276,21 +276,30 @@ if ( __name__ == '__main__' ):
         configReader = ConfigReader()
 
     except:
-        sys.stderr.write('Error: The config file could not be read correctly!\n\n')
-        sys.stderr.write('Stacktrace:\n\n' + traceback.format_exc())
-        exit(1)
+        sys.stderr.write('Error: The config file could not be read correctly:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        sys.exit(1)
 
-    parser = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(add_help=True,
         description='ArduKey authserver configuration tool ' + VERSION)
 
-    parser.add_argument('-l', '--list-ardukeys',
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version='ArduKey authserver configuration tool ' + VERSION,
+                        help='Prints version and exits.'
+                       )
+
+    ardukeyGroup = parser.add_argument_group('ArduKey management')
+    apikeyGroup = parser.add_argument_group('API key management')
+
+    ardukeyGroup.add_argument('--list-ardukeys',
                         action='store_true',
                         default=False,
                         required=False,
                         help='Lists all available ArduKeys.'
                        )
 
-    parser.add_argument('-a', '--add-ardukey',
+    ardukeyGroup.add_argument('--add-ardukey',
                         action='store',
                         default=False,
                         required=False,
@@ -299,31 +308,31 @@ if ( __name__ == '__main__' ):
                         help='Adds a new ArduKey.'
                        )
 
-    parser.add_argument('-r', '--revoke-ardukey',
+    ardukeyGroup.add_argument('--revoke-ardukey',
                         action='store',
                         default=False,
                         required=False,
                         nargs=1,
                         metavar='<publicId>',
                         type=str,
-                        help='Revokes a ArduKey.'
+                        help='Revokes an ArduKey.'
                        )
 
-    parser.add_argument('--list-apikeys',
+    apikeyGroup.add_argument('--list-apikeys',
                         action='store_true',
                         default=False,
                         required=False,
                         help='Lists all available API keys.'
                        )
 
-    parser.add_argument('--generate-apikey',
+    apikeyGroup.add_argument('--generate-apikey',
                         action='store_true',
                         default=False,
                         required=False,
                         help='Generates a new API key.'
                        )
 
-    parser.add_argument('--revoke-apikey',
+    apikeyGroup.add_argument('--revoke-apikey',
                         action='store',
                         default=False,
                         required=False,
@@ -333,12 +342,6 @@ if ( __name__ == '__main__' ):
                         help='Revokes an API key.'
                        )
 
-    parser.add_argument('-v', '--version',
-                        action='version',
-                        version='ArduKey authserver configuration tool ' + VERSION,
-                        help='Prints version and exits.'
-                       )
-
     args = vars(parser.parse_args())
 
     if ( args['list_ardukeys'] ):
@@ -346,8 +349,8 @@ if ( __name__ == '__main__' ):
 
     elif ( args['add_ardukey'] ):
         publicId = args['add_ardukey'][0]
-        secretId = args['add_ardukey'][0]
-        aesKey = args['add_ardukey'][0]
+        secretId = args['add_ardukey'][1]
+        aesKey = args['add_ardukey'][2]
         addArduKey(publicId, secretId, aesKey)
 
     elif ( args['revoke_ardukey'] ):
