@@ -3,6 +3,7 @@ ChangeLog
 MANIFEST.in
 NEWS
 README
+setup.cfg
 setup.py
 Lib/pyhsm/__init__.py
 Lib/pyhsm/aead_cmd.py

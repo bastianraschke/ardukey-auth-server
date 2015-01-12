@@ -4,7 +4,7 @@ set -e
 
 if [ "${1}" = "configure" ]; then
 
-    LOG_FILE="/var/log/ardukey-auth.log"
+    LOG_FILE="/var/log/ardukey-auth-server.log"
 
     ## Create log file if not existing
     if [ ! -f "${LOG_FILE}" ]; then
