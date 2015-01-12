@@ -27,15 +27,19 @@ install the packages with "dpkg":
 
 ~# dpkg -i ../*.deb
 
+And fix the dependency problems, if occured:
+
+~# apt-get -f install
+
 
 ## Maintaining
 ##
 
 First add an ArduKey with following command:
 
-~# ardukey-auth-conf --add-ardukey cccccccccccd b0d4a2d69bc4 7a1858592fcb76bd5eb2685421aed45e
+~# ardukey-auth-conf --add-ardukey cccccccccccb b0d4a2d69bc4 7a1858592fcb76bd5eb2685421aed45e
 
-So an ArduKey with public id "cccccccccccd", the secret id "b0d4a2d69bc4" and
+So an ArduKey with public id "cccccccccccb", the secret id "b0d4a2d69bc4" and
 the AES key "7a1858592fcb76bd5eb2685421aed45e" will be added.
 
 Now, generate a new API id to be able to sign your requests to auth server:
@@ -49,10 +53,10 @@ For example an administrator who wants to set up an ArduKey PAM module on his
 server needs one API key to be able to use auth server.
 
 
-## Test request
+## Request structure
 ##
 
-Now you can test the server. Send a HTTP GET request to:
+Requests will be sent via HTTP GET to:
 
 http://127.0.0.1:8080/ardukeyotp/1.0/verify
 
@@ -65,4 +69,19 @@ nonce     | A random string, to make request unique.
 apiId     | The API id, to identify the API key.
 hmac      | The signature of this request.
 
-Example request:
+The Hmac is a SHA-256 hash value that is calculated by key sorted (alphabetical)
+request parameter values: hmac = SHA256(apiId + otp + nonce)
+
+
+## Debugging start
+##
+
+You can also start the server in debugging mode. First shut down server:
+
+~# /etc/init.d/ardukey-auth-server stop
+
+Than start in debugging mode:
+
+~# ardukey-auth-server --debug
+
+Now you will see all debugging output from the server.

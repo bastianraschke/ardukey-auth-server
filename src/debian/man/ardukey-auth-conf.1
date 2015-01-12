@@ -1,32 +1,59 @@
-.TH pamfingerprint-conf 1 "March 2014" "" "PAM Fingerprint"
+.TH ardukey-auth-conf "1" "January 2014" "" "ArduKey authserver"
 
 .SH NAME
-\fBpamfingerprint-conf\fP - \fBpamfingerprint\fP configuration program
+\fBardukey-auth-conf\fP - ArduKey authserver configuration tool
 
 .SH SYNOPSIS
 .nf
 .fam C
-\fBpamfingerprint-conf\fP [\fB--add-user\fP NAME | \fB--remove-user\fP NAME | \fB--version\fP | \fB--help\fP]
+\fBardukey-auth-conf\fP [\fIoptions\fP]
 .fam T
 .fi
 
 .SH DESCRIPTION
-\fBpamfingerprint-conf\fP allows (as root) to bind or unbind users to \fBpamfingerprint\fR.
+\fBardukey-auth-conf\fP allows to manage the ArduKey authserver. You can
+add/revoke ArduKey devices or generate/revoke API keys that are required to
+communicate with this server. Of course, you can list all available information.
 
 .SH OPTIONS
 .TP
 .B
-\fB--add-user\fR NAME
-Adds a new user.
+\fB--list-ardukeys\fR
+Lists all available ArduKeys.
 
 .TP
 .B
-\fB--remove-user\fR NAME
-Removes a user.
+\fB--add-ardukey\fR \fIPUBLICID\fP \fISECRETID\fP \fIAESKEY\fP
+Adds a new ArduKey.
 
 .TP
 .B
-\fB--version\fR
+\fB--revoke-ardukey\fR \fIPUBLICID\fP
+Revokes an ArduKey.
+
+.TP
+.B
+\fB--delete-ardukey\fR \fIPUBLICID\fP
+Deletes an ArduKey.
+
+.TP
+.B
+\fB--list-apikeys\fR
+Lists all available API keys.
+
+.TP
+.B
+\fB--generate-apikey\fR
+Generates a new API key.
+
+.TP
+.B
+\fB--revoke-apikey\fR \fIAPIID\fP
+Revokes an API key.
+
+.TP
+.B
+\fB--version, \fB-v\fR
 Prints version and exits.
 
 .TP
@@ -35,15 +62,14 @@ Prints version and exits.
 Show summary of options.
 .PP
 
-.SH "SEE ALSO"
-\fBpamfingerprint\fR(1), \fBpamfingerprint-check\fR(1)
-
 .SH FILES
-/etc/pamfingerprint.conf
+/etc/ardukey-auth-server.conf
 
-.SH AUTHORS
-Philipp Meisberger <team@pm-codeworks.de>
-.br
+.SH AUTHOR
 Bastian Raschke <bastian.raschke@posteo.de>
 
-Please send bug reports to one of those mail addresses. Visit www.pm-codeworks.de and www.sicherheitskritisch.de for more interesting projects.
+.SH BUGS
+Please send bug reports above author mail address.
+
+.SH "SEE ALSO"
+Visit https://sicherheitskritisch.de for more interesting projects.

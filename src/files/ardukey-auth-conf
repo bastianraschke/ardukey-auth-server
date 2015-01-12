@@ -27,7 +27,29 @@ def listArduKeys():
         @return boolean
         """
 
-        ## TODO
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                SELECT publicid, secretid, counter, sessioncounter, timestamp, created, enabled
+                FROM ARDUKEY
+                ORDER BY created ASC
+                ''', [
+            ])
+
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+            if ( len(rows) == 0 ):
+                print('No available ArduKeys found!\n')
+                return True
+
+            print(rows)
+
+
+        except:
+            sys.stderr.write('Error: The ArduKeys could not be listed!\n')
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
+            return False
 
         return True
 
@@ -61,7 +83,7 @@ def addArduKey(publicId, secretId, aesKey):
             sys.stderr.write('Error: The given secret id "' + secretId + '" is not valid!\n')
             return False
 
-        aesKey = secretId.lower()
+        aesKey = aesKey.lower()
         aesKeyRegexMatch = re.match('^([0123456789abcdef]{32})$', aesKey)
 
         if ( secretIdRegexMatch == None ):
@@ -160,6 +182,57 @@ def revokeArduKey(publicId):
             return False
 
         print('The ArduKey has been revoked successfully.')
+        return True
+
+def deleteArduKey(publicId):
+        """
+        Deletes a ArduKey.
+
+        @param string publicId
+        The public id of ArduKey.
+
+        @return boolean
+        """
+
+        publicId = publicId.lower()
+        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+
+        if ( publicIdRegexMatch == None ):
+            sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+            return False
+
+        try:
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                SELECT publicid
+                FROM ARDUKEY
+                WHERE publicid = ?
+                ''', [
+                publicId,
+            ])
+
+            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+            if ( len(rows) == 0 ):
+                sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
+                return False
+
+            SQLiteWrapper.getInstance().cursor.execute(
+                '''
+                DELETE FROM ARDUKEY
+                WHERE publicid = ?
+                ''', [
+                publicId,
+            ])
+            SQLiteWrapper.getInstance().connection.commit()
+
+        except:
+            sys.stderr.write('Error: The ArduKey could not be deleted!\n')
+            sys.stderr.write('The database operation failed:\n\n')
+            sys.stderr.write(traceback.format_exc())
+            return False
+
+        print('The ArduKey has been deleted successfully.')
         return True
 
 def listAPIKeys():
@@ -294,7 +367,7 @@ if ( __name__ == '__main__' ):
                         default=False,
                         required=False,
                         nargs=3,
-                        metavar=('<publicId>', '<secretId>', '<aesKey>'),
+                        metavar=('PUBLICID', 'SECRETID', 'AESKEY'),
                         help='Adds a new ArduKey.'
                        )
 
@@ -303,9 +376,19 @@ if ( __name__ == '__main__' ):
                         default=False,
                         required=False,
                         nargs=1,
-                        metavar='<publicId>',
+                        metavar='PUBLICID',
                         type=str,
                         help='Revokes an ArduKey.'
+                       )
+
+    ardukeyGroup.add_argument('--delete-ardukey',
+                        action='store',
+                        default=False,
+                        required=False,
+                        nargs=1,
+                        metavar='PUBLICID',
+                        type=str,
+                        help='Deletes an ArduKey.'
                        )
 
     apikeyGroup.add_argument('--list-apikeys',
@@ -327,7 +410,7 @@ if ( __name__ == '__main__' ):
                         default=False,
                         required=False,
                         nargs=1,
-                        metavar='<apiId>',
+                        metavar='APIID',
                         type=int,
                         help='Revokes an API key.'
                        )
@@ -346,6 +429,10 @@ if ( __name__ == '__main__' ):
     elif ( args['revoke_ardukey'] ):
         publicId = args['revoke_ardukey'][0]
         revokeArduKey(publicId)
+
+    elif ( args['delete_ardukey'] ):
+        publicId = args['delete_ardukey'][0]
+        deleteArduKey(publicId)
 
     elif ( args['list_apikeys'] ):
         listAPIKeys()

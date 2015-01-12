@@ -296,16 +296,15 @@ class OTPVerification(object):
         except:
             raise CurruptedOTPError('The OTP does not contain public id or token!')
 
-        ## Convert public id and encrypted token to default hexadecimal string representation
-        publicId = self.__decodeArduHex(publicId)
+        ## Convert encrypted token to default hexadecimal string representation
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
         ## Get required information from database
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
-            SELECT secretid, counter, sessioncounter, timestamp, aeskey
+            SELECT secretid, counter, sessioncounter, timestamp, aeskey, enabled
             FROM ARDUKEY
-            WHERE publicid = ? AND enabled = 1
+            WHERE publicid = ?
             ''', [
             publicId,
         ])
@@ -318,8 +317,13 @@ class OTPVerification(object):
             oldSessionCounter = int(rows[0][2])
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
+            enabled = rows[0][5]
         else:
             logging.getLogger().debug('The public id "' + publicId + '" was not found in database!')
+            return False
+
+        if ( enabled == 0 ):
+            logging.getLogger().debug('The ArduKey "' + publicId + '" has been revoked!')
             return False
 
         ## Decrypt encrypted token
