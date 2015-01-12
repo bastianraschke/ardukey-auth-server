@@ -336,7 +336,7 @@ class OTPVerification(object):
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
         token['sessionCounter'] = int(decryptedToken[16:18], 16)
-        token['timestamp'] = int(decryptedToken[22:24] + decryptedToken[20:22] + decryptedToken[18:20], 16)
+        token['timestamp'] = int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[22:24], 16)
         token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
