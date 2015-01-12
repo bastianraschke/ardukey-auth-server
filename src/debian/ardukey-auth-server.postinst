@@ -15,7 +15,7 @@ if [ "${1}" = "configure" ]; then
     chown www-data:adm "${LOG_FILE}"
     chmod 640 "${LOG_FILE}"
 
-    DATABASE_FILE="/usr/share/ardukey-auth/ardukey-auth.sqlite"
+    DATABASE_FILE="/usr/share/ardukey-auth-server/ardukey-auth-server.sqlite"
 
     ## Set correct permissions to database file
     chown www-data:www-data "${DATABASE_FILE}"
