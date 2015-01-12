@@ -21,319 +21,319 @@ from ardukeyauth.sqlitewrapper import SQLiteWrapper
 
 
 def listArduKeys():
-        """
-        Lists all available ArduKeys.
+    """
+    Lists all available ArduKeys.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                SELECT publicid, secretid, counter, sessioncounter, timestamp, created, enabled
-                FROM ARDUKEY
-                ORDER BY created ASC
-                ''', [
-            ])
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT publicid, secretid, counter, sessioncounter, timestamp, created, enabled
+            FROM ARDUKEY
+            ORDER BY created ASC
+            ''', [
+        ])
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
 
-            if ( len(rows) == 0 ):
-                print('No available ArduKeys found!\n')
-                return True
+        if ( len(rows) == 0 ):
+            print('No available ArduKeys found!\n')
+            return True
 
-            print(rows)
+        print(rows)
 
 
-        except:
-            sys.stderr.write('Error: The ArduKeys could not be listed!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
-            return False
+    except:
+        sys.stderr.write('Error: The ArduKeys could not be listed!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
 
-        return True
+    return True
 
 def addArduKey(publicId, secretId, aesKey):
-        """
-        Adds a ArduKey.
+    """
+    Adds a ArduKey.
 
-        @param string publicId
-        The public id of ArduKey.
+    @param string publicId
+    The public id of ArduKey.
 
-        @param string secretId
-        The secret id of ArduKey.
+    @param string secretId
+    The secret id of ArduKey.
 
-        @param string aesKey
-        The AES key as hexadecimal string.
+    @param string aesKey
+    The AES key as hexadecimal string.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        publicId = publicId.lower()
-        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+    publicId = publicId.lower()
+    publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
 
-        if ( publicIdRegexMatch == None ):
-            sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+    if ( publicIdRegexMatch == None ):
+        sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+        return False
+
+    secretId = secretId.lower()
+    secretIdRegexMatch = re.match('^([0123456789abcdef]{12})$', secretId)
+
+    if ( secretIdRegexMatch == None ):
+        sys.stderr.write('Error: The given secret id "' + secretId + '" is not valid!\n')
+        return False
+
+    aesKey = aesKey.lower()
+    aesKeyRegexMatch = re.match('^([0123456789abcdef]{32})$', aesKey)
+
+    if ( secretIdRegexMatch == None ):
+        sys.stderr.write('Error: The given AES key "' + aesKey + '" is not valid!\n')
+        return False
+
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT publicid
+            FROM ARDUKEY
+            WHERE publicid = ?
+            ''', [
+            publicId,
+        ])
+
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) > 0 ):
+            sys.stderr.write('Error: The ArduKey "' + publicId + '" already exists!\n')
             return False
 
-        secretId = secretId.lower()
-        secretIdRegexMatch = re.match('^([0123456789abcdef]{12})$', secretId)
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            INSERT INTO ARDUKEY(publicid, secretid, aeskey, created)
+            VALUES(?, ?, ?, DATETIME());
+            ''', [
+            publicId,
+            secretId,
+            aesKey,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
 
-        if ( secretIdRegexMatch == None ):
-            sys.stderr.write('Error: The given secret id "' + secretId + '" is not valid!\n')
-            return False
+    except:
+        sys.stderr.write('Error: The ArduKey could not be created!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
 
-        aesKey = aesKey.lower()
-        aesKeyRegexMatch = re.match('^([0123456789abcdef]{32})$', aesKey)
-
-        if ( secretIdRegexMatch == None ):
-            sys.stderr.write('Error: The given AES key "' + aesKey + '" is not valid!\n')
-            return False
-
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                SELECT publicid
-                FROM ARDUKEY
-                WHERE publicid = ?
-                ''', [
-                publicId,
-            ])
-
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
-
-            if ( len(rows) > 0 ):
-                sys.stderr.write('Error: The ArduKey "' + publicId + '" already exists!\n')
-                return False
-
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                INSERT INTO ARDUKEY(publicid, secretid, aeskey, created)
-                VALUES(?, ?, ?, DATETIME());
-                ''', [
-                publicId,
-                secretId,
-                aesKey,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
-
-        except:
-            sys.stderr.write('Error: The ArduKey could not be created!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
-            return False
-
-        print('The ArduKey has been created successfully.')
-        return True
+    print('The ArduKey has been created successfully.')
+    return True
 
 def revokeArduKey(publicId):
-        """
-        Revokes a ArduKey.
+    """
+    Revokes a ArduKey.
 
-        @param string publicId
-        The public id of ArduKey.
+    @param string publicId
+    The public id of ArduKey.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        publicId = publicId.lower()
-        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+    publicId = publicId.lower()
+    publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
 
-        if ( publicIdRegexMatch == None ):
-            sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+    if ( publicIdRegexMatch == None ):
+        sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+        return False
+
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT enabled
+            FROM ARDUKEY
+            WHERE publicid = ?
+            ''', [
+            publicId,
+        ])
+
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) == 0 ):
+            sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
             return False
 
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                SELECT enabled
-                FROM ARDUKEY
-                WHERE publicid = ?
-                ''', [
-                publicId,
-            ])
+        enabled = rows[0][0]
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
-
-            if ( len(rows) == 0 ):
-                sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
-                return False
-
-            enabled = rows[0][0]
-
-            if ( enabled == 0 ):
-                sys.stderr.write('Error: The ArduKey "' + publicId + '" is still revoked!\n')
-                return False
-
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                UPDATE ARDUKEY
-                SET enabled = 0
-                WHERE publicid = ?
-                ''', [
-                publicId,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
-
-        except:
-            sys.stderr.write('Error: The ArduKey could not be revoked!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
+        if ( enabled == 0 ):
+            sys.stderr.write('Error: The ArduKey "' + publicId + '" is still revoked!\n')
             return False
 
-        print('The ArduKey has been revoked successfully.')
-        return True
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            UPDATE ARDUKEY
+            SET enabled = 0
+            WHERE publicid = ?
+            ''', [
+            publicId,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
+
+    except:
+        sys.stderr.write('Error: The ArduKey could not be revoked!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
+
+    print('The ArduKey has been revoked successfully.')
+    return True
 
 def deleteArduKey(publicId):
-        """
-        Deletes a ArduKey.
+    """
+    Deletes a ArduKey.
 
-        @param string publicId
-        The public id of ArduKey.
+    @param string publicId
+    The public id of ArduKey.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        publicId = publicId.lower()
-        publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
+    publicId = publicId.lower()
+    publicIdRegexMatch = re.match('^([cbdefghijklnrtuv]{12})$', publicId)
 
-        if ( publicIdRegexMatch == None ):
-            sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+    if ( publicIdRegexMatch == None ):
+        sys.stderr.write('Error: The given public id "' + publicId + '" is not valid!\n')
+        return False
+
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT publicid
+            FROM ARDUKEY
+            WHERE publicid = ?
+            ''', [
+            publicId,
+        ])
+
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) == 0 ):
+            sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
             return False
 
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                SELECT publicid
-                FROM ARDUKEY
-                WHERE publicid = ?
-                ''', [
-                publicId,
-            ])
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            DELETE FROM ARDUKEY
+            WHERE publicid = ?
+            ''', [
+            publicId,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
+    except:
+        sys.stderr.write('Error: The ArduKey could not be deleted!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
 
-            if ( len(rows) == 0 ):
-                sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
-                return False
-
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                DELETE FROM ARDUKEY
-                WHERE publicid = ?
-                ''', [
-                publicId,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
-
-        except:
-            sys.stderr.write('Error: The ArduKey could not be deleted!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
-            return False
-
-        print('The ArduKey has been deleted successfully.')
-        return True
+    print('The ArduKey has been deleted successfully.')
+    return True
 
 def listAPIKeys():
-        """
-        Lists all available API keys.
+    """
+    Lists all available API keys.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        ## TODO
+    ## TODO
 
-        return True
+    return True
 
 def generateAPIKey():
-        """
-        Generates a new API key.
+    """
+    Generates a new API key.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        ## See https://stackoverflow.com/questions/2257441/
-        sharedSecret = ''.join(random.SystemRandom().choice(
-            string.ascii_uppercase + string.digits) for _ in range(64))
+    ## See https://stackoverflow.com/questions/2257441/
+    sharedSecret = ''.join(random.SystemRandom().choice(
+        string.ascii_uppercase + string.digits) for _ in range(64))
 
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                INSERT INTO API(secret, created)
-                VALUES(?, DATETIME());
-                ''', [
-                sharedSecret,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            INSERT INTO API(secret, created)
+            VALUES(?, DATETIME());
+            ''', [
+            sharedSecret,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
 
-            lastRowId = SQLiteWrapper.getInstance().cursor.lastrowid
+        lastRowId = SQLiteWrapper.getInstance().cursor.lastrowid
 
-        except:
-            sys.stderr.write('Error: The API key could not be generated!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
-            return False
+    except:
+        sys.stderr.write('Error: The API key could not be generated!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
 
-        print('The API key has been generated successfully.')
-        print('API id:        ' + str(lastRowId))
-        print('Shared secret: ' + sharedSecret)
-        return True
+    print('The API key has been generated successfully.')
+    print('API id:        ' + str(lastRowId))
+    print('Shared secret: ' + sharedSecret)
+    return True
 
 def revokeAPIKey(apiId):
-        """
-        Revokes a API key.
+    """
+    Revokes a API key.
 
-        @param string apiId
-        The id of the API key.
+    @param string apiId
+    The id of the API key.
 
-        @return boolean
-        """
+    @return boolean
+    """
 
-        if ( type(apiId) != int ):
-            sys.stderr.write('Error: The given API id "' + apiId + '" is not valid!\n')
+    if ( type(apiId) != int ):
+        sys.stderr.write('Error: The given API id "' + apiId + '" is not valid!\n')
+        return False
+
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT enabled
+            FROM API
+            WHERE id = ?
+            ''', [
+            apiId,
+        ])
+
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) == 0 ):
+            sys.stderr.write('Error: The API key "' + str(apiId) + '" does not exists!\n')
             return False
 
-        try:
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                SELECT enabled
-                FROM API
-                WHERE id = ?
-                ''', [
-                apiId,
-            ])
+        enabled = rows[0][0]
 
-            rows = SQLiteWrapper.getInstance().cursor.fetchall()
-
-            if ( len(rows) == 0 ):
-                sys.stderr.write('Error: The API key "' + str(apiId) + '" does not exists!\n')
-                return False
-
-            enabled = rows[0][0]
-
-            if ( enabled == 0 ):
-                sys.stderr.write('Error: The API key "' + str(apiId) + '" is still revoked!\n')
-                return False
-
-            SQLiteWrapper.getInstance().cursor.execute(
-                '''
-                UPDATE API
-                SET enabled = 0
-                WHERE id = ?
-                ''', [
-                apiId,
-            ])
-            SQLiteWrapper.getInstance().connection.commit()
-
-        except:
-            sys.stderr.write('Error: The API key could not be revoked!\n')
-            sys.stderr.write('The database operation failed:\n\n')
-            sys.stderr.write(traceback.format_exc())
+        if ( enabled == 0 ):
+            sys.stderr.write('Error: The API key "' + str(apiId) + '" is still revoked!\n')
             return False
 
-        print('The API key has been revoked successfully.')
-        return True
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            UPDATE API
+            SET enabled = 0
+            WHERE id = ?
+            ''', [
+            apiId,
+        ])
+        SQLiteWrapper.getInstance().connection.commit()
+
+    except:
+        sys.stderr.write('Error: The API key could not be revoked!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
+
+    print('The API key has been revoked successfully.')
+    return True
 
 
 if ( __name__ == '__main__' ):
