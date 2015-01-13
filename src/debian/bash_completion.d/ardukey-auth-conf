@@ -1,0 +1,14 @@
+_ardukey-auth-conf()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--list-ardukeys --add-ardukey --revoke-ardukey --delete-ardukey --list-apikeys --generate-apikey --revoke-apikey --help --version"
+
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+}
+complete -F _ardukey-auth-conf ardukey-auth-conf
