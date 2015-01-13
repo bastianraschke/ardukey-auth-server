@@ -26,8 +26,9 @@ Section: net
 Depends: python3,
          python-argparse,
          python3-ardukey-auth (= ${binary:Version}),
-         adduser,
+         bash-completion,
          lsb-base (>= 3.2-14),
+         adduser,
          ${python3:Depends}, ${misc:Depends}
 Description: ArduKey authserver written in Python 3.
  The ArduKey authserver provides a verification service for ArduKey devices.

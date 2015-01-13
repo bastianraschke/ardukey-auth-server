@@ -1,1 +1,1 @@
-debian/bash_completion.d/*
+debian/bash_completion.d/ardukey-auth-conf
