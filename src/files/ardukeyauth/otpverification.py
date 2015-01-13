@@ -76,9 +76,9 @@ class OTPVerification(object):
             ## Get shared secret of given API key
             ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
                 '''
-                SELECT secret
+                SELECT secret, enabled
                 FROM API
-                WHERE id = ? AND enabled = 1
+                WHERE id = ?
                 ''', [
                 requestParameters['apiId'],
             ])
@@ -86,10 +86,19 @@ class OTPVerification(object):
             rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
 
             if ( len(rows) > 0 ):
-                self.__sharedSecret = rows[0][0]
+                sharedSecret = rows[0][0]
+                enabled = rows[0][1]
             else:
-                message = 'The given API key "' + requestParameters['apiId'] + '" was not found!'
+                message = 'The API key "' + requestParameters['apiId'] + '" was not found!'
                 raise NoAPIKeyAvailableError(message)
+
+            if ( enabled == 0 ):
+                message = 'The API key "' + requestParameters['apiId'] + '" has been revoked!'
+                raise NoAPIKeyAvailableError(message)
+
+            ## Important: Just now set shared secret!
+            ## Otherwise the response hmac would leak revokation status!
+            self.__sharedSecret = sharedSecret
 
             ## Calculates hmac of request to verify authenticity
             requestHmac = self.__calculateHmac(requestParameters)
@@ -319,7 +328,7 @@ class OTPVerification(object):
             aesKey = rows[0][4]
             enabled = rows[0][5]
         else:
-            logging.getLogger().debug('The public id "' + publicId + '" was not found in database!')
+            logging.getLogger().debug('The ArduKey "' + publicId + '" was not found in database!')
             return False
 
         if ( enabled == 0 ):

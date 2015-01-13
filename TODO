@@ -1,3 +1,2 @@
-- Finish conf program
-- Create dedicated user instead of using www-data
+- Optional: Create dedicated user instead of using www-data
 - Security revision by Nils

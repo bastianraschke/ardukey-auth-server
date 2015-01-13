@@ -42,8 +42,18 @@ def listArduKeys():
             print('No available ArduKeys found!\n')
             return True
 
-        print(rows)
+        ## Table listing approach - thanks to: "9000"
+        ## https://stackoverflow.com/questions/5084743
 
+        tableFormat = '{0:12} | {1:12} | {2:7} | {3:15} | {4:9} | {5:19} | {6:7}'
+
+        ## Print table header
+        print(tableFormat.format('Public ID', 'Secret ID', 'Counter',
+            'Session counter', 'Timestamp', 'Created', 'Enabled'))
+
+        ## Print table data rows
+        for row in rows:
+            print(tableFormat.format(*row))
 
     except:
         sys.stderr.write('Error: The ArduKeys could not be listed!\n')
@@ -242,7 +252,35 @@ def listAPIKeys():
     @return boolean
     """
 
-    ## TODO
+    try:
+        SQLiteWrapper.getInstance().cursor.execute(
+            '''
+            SELECT id, secret, created, enabled
+            FROM API
+            ORDER BY created ASC
+            ''', [
+        ])
+
+        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) == 0 ):
+            print('No available API keys found!\n')
+            return True
+
+        tableFormat = '{0:6} | {1:64} | {2:19} | {3:7}'
+
+        ## Print table header
+        print(tableFormat.format('API ID', 'Shared secret', 'Created', 'Enabled'))
+
+        ## Print table data rows
+        for row in rows:
+            print(tableFormat.format(*row))
+
+    except:
+        sys.stderr.write('Error: The ArduKeys could not be listed!\n')
+        sys.stderr.write('The database operation failed:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        return False
 
     return True
 
