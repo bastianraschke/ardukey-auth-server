@@ -21,7 +21,7 @@ DAEMON="/usr/sbin/${NAME}"
 DAEMON_ARGS=""
 PIDFILE="/var/run/${NAME}.pid"
 SCRIPTNAME="/etc/init.d/${NAME}"
-RUNASUSER="www-data"
+RUNASUSER="ardukey-auth"
 PROCESS_EXECUTABLE="/usr/bin/python3"
 
 # Exit if the package is not installed

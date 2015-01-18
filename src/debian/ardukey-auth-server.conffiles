@@ -1,1 +1,1 @@
-/usr/share/ardukey-auth-server/ardukey-auth-server.sqlite
+/var/lib/ardukey-auth-server/ardukey-auth-server.sqlite

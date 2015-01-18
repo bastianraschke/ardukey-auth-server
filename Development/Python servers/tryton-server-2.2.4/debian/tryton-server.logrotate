@@ -1,0 +1,11 @@
+/var/log/trytond.log {
+	daily
+	missingok
+	rotate 7
+	postrotate
+		invoke-rc.d --quiet tryton-server restart > /dev/null
+	endscript
+	compress
+	notifempty
+	create 640 tryton adm
+}

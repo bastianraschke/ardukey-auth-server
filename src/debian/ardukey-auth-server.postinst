@@ -4,6 +4,16 @@ set -e
 
 if [ "${1}" = "configure" ]; then
 
+    USERNAME="ardukey-auth"
+
+    ## Add system user for server (no home, no shell)
+    adduser --quiet --system --group --disabled-password \
+        --home "/var/cache/${USERNAME}/" --no-create-home \
+        "${USERNAME}"
+
+    ## Important: NEVER delete this user (eg. in prerm script):
+    ## see: #3 @ https://unix.stackexchange.com/questions/47880/
+
     LOG_FILE="/var/log/ardukey-auth-server.log"
 
     ## Create log file if not existing
@@ -11,17 +21,20 @@ if [ "${1}" = "configure" ]; then
         touch "${LOG_FILE}"
     fi
 
-    ## Set correct permissions to log file
-    chown www-data:adm "${LOG_FILE}"
+    ## Correct permissions of log file
+    chown "${USERNAME}:adm" "${LOG_FILE}"
     chmod 640 "${LOG_FILE}"
 
-    DATABASE_FILE="/usr/share/ardukey-auth-server/ardukey-auth-server.sqlite"
+    DATABASE_FILE="/var/lib/ardukey-auth-server/ardukey-auth-server.sqlite"
 
-    ## Set correct permissions to database file
-    chown www-data:www-data "${DATABASE_FILE}"
+    ## Correct permissions of database file
+    chown "${USERNAME}:${USERNAME}" "${DATABASE_FILE}"
     chmod 600 "${DATABASE_FILE}"
 
+
 fi
+
+invoke-rc.d ardukey-auth-server restart
 
 #DEBHELPER#
 

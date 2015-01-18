@@ -1,8 +1,0 @@
-Author: Yubico
-Basename: yubikey-ksm
-Homepage: https://developers.yubico.com/yubikey-ksm/
-License: BSD-2-Clause
-Name: yubikey-ksm
-Project: yubikey-ksm
-Summary: YubiKey Key Storage Module
-Travis: https://travis-ci.org/Yubico/yubikey-ksm

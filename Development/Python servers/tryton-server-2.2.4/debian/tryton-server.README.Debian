@@ -1,0 +1,105 @@
+tryton-server for Debian
+------------------------
+
+Tryton uses a Relational Database Management System (RDBMS) to store data. The
+preferred RDBMS for Tryton is PostgreSQL.
+
+You have to setup this database manually. Here is a short explanation how to
+achieve this (you need to execute all commands as root):
+
+  0. Making sure, PostgreSQL is running:
+
+     # /etc/init.d/postgresql* restart
+
+     Note: Make sure you have setup database password authentication. Please
+     refer to the PostgreSQL manual how to do this.
+
+  1. Creating the database user:
+
+     # su - postgres -c "createuser --createdb --no-createrole --no-superuser \
+       --pwprompt tryton"
+
+     You have to enter
+     * a password for the future database user (this will be used later in the
+       setup of /etc/trytond.conf as db_password)
+     * confirm it
+     * and finally enter the password of the postgres superuser.
+
+     Note: If you want to run the database as another user than 'tryton', you
+     need to replace 'tryton' above with the user you want to use instead, and
+     you need to adjust in the same way 'db_user = tryton' in /etc/trytond.conf.
+
+  2. Setting up the Tryton server (trytond)
+
+     Adjust /etc/trytond.conf to reflect the setup of your system and use the
+     database user and password from step 1 for db_user and db_password.
+
+     Also edit db_host and db_port to point to your PostgreSQL database server,
+     if not running on localhost and/or on non standard port (5432).
+
+  3. Restarting trytond:
+
+     # /etc/init.d/tryton-server restart
+
+Note: The following steps (4-5) can also be performed easily from the Tryton
+Client and are not mandatory to be done here.
+
+  4. Creating the database:
+
+     # su - postgres -c "createdb --encoding=UNICODE --owner=tryton tryton"
+
+     Note: Use your database user for tryton as owner of the database, and enter
+     a name for the database (here as default: tryton).
+
+  5. Initialize the database:
+
+     # /usr/bin/trytond -i all -d tryton
+
+     Note: Use the database name you chose in step 4 (here as default: tryton).
+     You will be asked for the admin password for this database.
+
+
+Now, you're finished. Please be aware of the following things:
+
+  * trytond has one default account for server administration:
+    - User: admin; password: admin (or the one you have configured in
+      trytond.conf)
+
+    Note: Each Tryton database will have its own admin with login password
+    stored in the database itself (not to be confound with the admin of the
+    Tryton Server).
+
+  * trytond must have read access to its configuration file, otherwise it will
+    start with internal defaults. The postinst script will (re)set ownership to
+    the system user running trytond and correct permissions on the standard
+    configuration file (0400 on /etc/tyond.conf).
+
+  * trytond listens by default on port 8070 (netrpc). If you need to change
+    this, edit /etc/trytond.conf and replace 'port = 8070' with
+    'port = <your port>'.
+
+  * trytond in its upstream configuration listens by default to *all*
+    interfaces. If you want to change this default for security reasons, edit
+    /etc/trytond.conf and change the listening interface to
+    'interface = localhost' or 'interface = <your ip>' according to your needs.
+
+  * Installation of modules into the database can be done from the
+    Administration Panel of the client. Under Modules you can select from the
+    modules packages (trytond-modules*) you have installed on your system.
+
+    To install just all, run a second time:
+
+    # /usr/bin/trytond -i all -d tryton
+
+    Remember to replace tryton with the name of your database.
+
+  * Once you have upgraded to a new major version you have to update your
+    database(s). After the categorically recommended backup do:
+
+    # /usr/bin/trytond -u all -d tryton
+
+    Remember to replace tryton with the name of your database.
+
+  * Only the same major version of Tryton Client and Tryton server can connect.
+
+ -- Mathias Behrle <mathiasb@m9s.biz>  Sun, 09 May 2010 12:00:00 +0200

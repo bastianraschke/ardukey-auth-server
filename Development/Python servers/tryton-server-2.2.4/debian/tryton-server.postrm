@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -e
+
+TRYTON_USER="tryton"
+
+case "${1}" in
+	purge)
+		# Removing system user
+		if [ -x /usr/sbin/deluser ]
+		then
+			deluser --quiet --system ${TRYTON_USER}
+		fi
+
+		# Removing log directory
+		rmdir --ignore-fail-on-non-empty /var/log/tryton > /dev/null 2>&1 || true
+
+		# Removing (potentially) empty directories
+		rmdir --ignore-fail-on-non-empty /var/lib/tryton > /dev/null 2>&1 || true
+		;;
+
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+
+		;;
+
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+#DEBHELPER#
+
+exit 0

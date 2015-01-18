@@ -1,0 +1,747 @@
+Author: Mathias Behrle <mathiasb@m9s.biz>
+Description: Support new structure of pywebdav > 0.9.4.1.
+--- tryton-server.orig/trytond/protocols/webdav.py	2012-09-11 19:41:40.000000000 +0200
++++ tryton-server/trytond/protocols/webdav.py	2012-09-12 16:44:26.630387413 +0200
+@@ -12,11 +12,15 @@
+ import logging
+ from threading import local
+ import xml.dom.minidom
+-from DAV import AuthServer, WebDAVServer, iface
+-from DAV.errors import *
+-from DAV.constants import COLLECTION, DAV_VERSION_1, DAV_VERSION_2
+-from DAV.utils import get_uriparentpath, get_urifilename, quote_uri
+-from DAV.davcmd import copyone, copytree, moveone, movetree, delone, deltree
++import base64
++from pywebdav.lib import WebDAVServer, iface
++from pywebdav.lib.errors import DAV_Error, DAV_NotFound, DAV_Secret, \
++    DAV_Forbidden, DAV_Requested_Range_Not_Satisfiable
++from pywebdav.lib.constants import COLLECTION, DAV_VERSION_1, DAV_VERSION_2
++from pywebdav.lib.utils import get_uriparentpath, get_urifilename, \
++    quote_uri
++from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, \
++    delone, deltree
+ from trytond.protocols.sslsocket import SSLSocket
+ from trytond.protocols.common import daemon
+ from trytond.config import CONFIG
+@@ -47,19 +51,14 @@
+ 
+ CACHE = LocalDict()
+ 
+-# Fix for bad use of Document in DAV.utils make_xmlresponse
+-from DAV.utils import VERSION as DAV_VERSION
+-if DAV_VERSION == '0.6':
+-    from xml.dom.Document import Document
+-    Document.Document = Document
+ 
+-# Fix for unset _config in DAVRequestHandler
+-if not hasattr(WebDAVServer.DAVRequestHandler, '_config'):
++def setupConfig():
+ 
+ 
+-    class DAV:
++    class ConfigDAV:
+         lockemulation = False
+         verbose = False
++        baseurl = ''
+ 
+         def getboolean(self, name):
+             return bool(self.get(name))
+@@ -71,10 +70,10 @@
+                 return default
+ 
+ 
+-    class _Config:
+-        DAV = DAV()
++    class Config:
++        DAV = ConfigDAV()
+ 
+-    WebDAVServer.DAVRequestHandler._config = _Config()
++    return Config()
+ 
+ 
+ class BaseThreadedHTTPServer(SocketServer.ThreadingMixIn,
+@@ -102,7 +101,7 @@
+ class WebDAVServerThread(daemon):
+ 
+     def __init__(self, interface, port, secure=False):
+-        daemon.__init__(self, interface, port, secure, 
++        daemon.__init__(self, interface, port, secure,
+                 name='WebDAVServerThread')
+         if self.secure:
+             handler_class = SecureWebDAVAuthRequestHandler
+@@ -114,7 +113,9 @@
+             server_class = BaseThreadedHTTPServer
+             if self.ipv6:
+                 server_class = BaseThreadedHTTPServer6
++        handler_class._config = setupConfig()
+         handler_class.IFACE_CLASS = TrytonDAVInterface(interface, port, secure)
++        handler_class.IFACE_CLASS.baseurl = handler_class._config.DAV.baseurl
+         self.server = server_class((interface, port), handler_class)
+ 
+ class BaseThreadedHTTPServer6(BaseThreadedHTTPServer):
+@@ -178,11 +179,15 @@
+         pool = Pool(Transaction().cursor.database_name)
+         try:
+             collection_obj = pool.get('webdav.collection')
+-            if uri[-1:] != '/':
+-                uri += '/'
++            scheme, netloc, path, params, query, fragment = \
++                urlparse.urlparse(uri)
++            if path[-1:] != '/':
++                path += '/'
+             for child in collection_obj.get_childs(dburi, filter=filter,
+                     cache=CACHE):
+-                res.append(uri + child.encode('utf-8'))
++                res.append(urlparse.urlunparse((scheme, netloc,
++                            path + child.encode('utf-8'), params, query,
++                            fragment)))
+         except KeyError:
+             return res
+         except (DAV_Error, DAV_NotFound, DAV_Secret, DAV_Forbidden), exception:
+@@ -209,8 +214,13 @@
+             res += '<h2>Collection: %s</h2>' % (get_urifilename(uri) or '/')
+             res += '<ul>'
+             if dbname:
++                scheme, netloc, path, params, query, fragment = \
++                    urlparse.urlparse(uri)
++                if path[-1:] != '/':
++                    path += '/'
+                 res += '<li><a href="%s">..</a></li>' \
+-                        % (quote_uri(get_uriparentpath(uri) or '/'))
++                        % urlparse.urlunparse((scheme, netloc, path + '..',
++                            params, query, fragment))
+             childs = self.get_childs(uri)
+             childs.sort()
+             for child in childs:
+@@ -514,10 +524,11 @@
+     ) + ['current-user-privilege-set'])
+ 
+ 
+-class WebDAVAuthRequestHandler(AuthServer.BufferedAuthRequestHandler,
+-        WebDAVServer.DAVRequestHandler):
++class WebDAVAuthRequestHandler(WebDAVServer.DAVRequestHandler):
+ 
+     def finish(self):
++        WebDAVServer.DAVRequestHandler.finish(self)
++
+         global CACHE
+         CACHE = LocalDict()
+         if not Transaction().cursor:
+@@ -527,25 +538,57 @@
+         if dbname:
+             Cache.resets(dbname)
+ 
++    def parse_request(self):
++        if not BaseHTTPServer.BaseHTTPRequestHandler.parse_request(self):
++            return False
++
++        authorization = self.headers.get('Authorization', '')
++        if authorization:
++            scheme, credentials = authorization.split()
++            if scheme != 'Basic':
++                self.send_error(501)
++                return False
++            credentials = base64.decodestring(credentials)
++            user, password = credentials.split(':', 2)
++            if not self.get_userinfo(user, password, self.command):
++                self.send_autherror(401, "Authorization Required")
++                return False
++        else:
++            if not self.get_userinfo(None, None, self.command):
++                self.send_autherror(401, "Authorization Required")
++                return False
++        return True
++
+     def get_userinfo(self, user, password, command=''):
+-        dbname = urllib.unquote_plus(self.path.split('/', 2)[1])
+-        database = Database().connect()
+-        cursor = database.cursor()
+-        databases = database.list(cursor)
+-        cursor.close()
+-        if not dbname or dbname not in databases:
+-            return 1
+-        user = int(login(dbname, user, password, cache=False))
++        path = urlparse.urlparse(self.path).path
++        dbname = urllib.unquote_plus(path.split('/', 2)[1])
++        if not dbname:
++            Database().connect()
++            return True
++        if user:
++            user = int(login(dbname, user, password, cache=False))
++            if not user:
++                return None
++        else:
++            url = urlparse.urlparse(self.path)
++            query = urlparse.parse_qs(url.query)
++            path = url.path[len(dbname) + 2:]
++            if 'key' in query:
++                key, = query['key']
++                with Transaction().start(dbname, 0) as transaction:
++                    database_list = Pool.database_list()
++                    pool = Pool(dbname)
++                    if not dbname in database_list:
++                        pool.init()
++                    share_obj = pool.get('webdav.share')
++                    user = share_obj.get_login(key, command, path)
++                    transaction.cursor.commit()
++            if not user:
++                return None
+ 
+         Transaction().start(dbname, user)
+         Cache.clean(dbname)
+-        database_list = Pool.database_list()
+-        pool = Pool(dbname)
+-        if not dbname in database_list:
+-            pool.init()
+-        if user:
+-            return 1
+-        return 0
++        return user
+ 
+ class SecureWebDAVAuthRequestHandler(WebDAVAuthRequestHandler):
+ 
+--- tryton-server.orig/trytond/webdav/webdav.py	2011-10-24 15:57:46.000000000 +0200
++++ tryton-server/trytond/webdav/webdav.py	2012-09-12 16:07:24.620219292 +0200
+@@ -2,11 +2,33 @@
+ #this repository contains the full copyright notices and license terms.
+ import os
+ import time
++import urllib
++import urlparse
++import socket
++import encodings
++import uuid
++import datetime
++from dateutil.relativedelta import relativedelta
+ from trytond.model import ModelView, ModelSQL, fields
+ from trytond.version import PACKAGE, VERSION, WEBSITE
+ from trytond.tools import reduce_ids, safe_eval
+ from trytond.transaction import Transaction
+ from trytond.pool import Pool
++from trytond.config import CONFIG
++from trytond.pyson import Eval
++
++def get_webdav_url():
++    if CONFIG['ssl_webdav']:
++        protocol = 'https'
++    else:
++        protocol = 'http'
++    hostname = (CONFIG['hostname_webdav']
++        or unicode(socket.getfqdn(), 'utf8'))
++    hostname = '.'.join(encodings.idna.ToASCII(part) for part in
++        hostname.split('.'))
++    return urlparse.urlunsplit((protocol, hostname,
++        urllib.quote(Transaction().cursor.database_name + '/'), None, None))
++
+ 
+ 
+ class Collection(ModelSQL, ModelView):
+@@ -19,6 +41,8 @@
+     childs = fields.One2Many('webdav.collection', 'parent', 'Children')
+     model = fields.Many2One('ir.model', 'Model')
+     domain = fields.Char('Domain')
++    complete_name = fields.Function(fields.Char('Complete Name',
++            order_field='name'), 'get_rec_name')
+ 
+     def __init__(self):
+         super(Collection, self).__init__()
+@@ -46,6 +70,21 @@
+     def default_domain(self):
+         return '[]'
+ 
++    def get_rec_name(self, ids, name):
++        if not ids:
++            return {}
++        names = {}
++        def _name(collection):
++            if collection.id in names:
++                return names[collection.id]
++            elif collection.parent:
++                return _name(collection.parent) + '/' + collection.name
++            else:
++                return collection.name
++        for collection in self.browse(ids):
++            names[collection.id] = _name(collection)
++        return names
++
+     def check_attachment(self, ids):
+         pool = Pool()
+         attachment_obj = pool.get('ir.attachment')
+@@ -307,7 +346,7 @@
+         return res
+ 
+     def get_resourcetype(self, uri, cache=None):
+-        from DAV.constants import COLLECTION, OBJECT
++        from pywebdav.lib.constants import COLLECTION, OBJECT
+         object_name, object_id = self._uri2object(uri, cache=cache)
+         if object_name in ('ir.attachment', 'ir.action.report'):
+             return OBJECT
+@@ -435,7 +474,7 @@
+         return time.time()
+ 
+     def get_data(self, uri, cache=None):
+-        from DAV.errors import DAV_NotFound
++        from pywebdav.lib.errors import DAV_NotFound
+         pool = Pool()
+         attachment_obj = pool.get('ir.attachment')
+         report_obj = pool.get('ir.action.report')
+@@ -488,8 +527,8 @@
+         raise DAV_NotFound
+ 
+     def put(self, uri, data, content_type, cache=None):
+-        from DAV.errors import DAV_Forbidden
+-        from DAV.utils import get_uriparentpath, get_urifilename
++        from pywebdav.lib.errors import DAV_Forbidden
++        from pywebdav.lib.utils import get_uriparentpath, get_urifilename
+         object_name, object_id = self._uri2object(get_uriparentpath(uri),
+                 cache=cache)
+         if not object_name \
+@@ -520,8 +559,8 @@
+         return
+ 
+     def mkcol(self, uri, cache=None):
+-        from DAV.errors import DAV_Forbidden
+-        from DAV.utils import get_uriparentpath, get_urifilename
++        from pywebdav.lib.errors import DAV_Forbidden
++        from pywebdav.lib.utils import get_uriparentpath, get_urifilename
+         if uri[-1:] == '/':
+             uri = uri[:-1]
+         object_name, object_id = self._uri2object(get_uriparentpath(uri),
+@@ -539,7 +578,7 @@
+         return 201
+ 
+     def rmcol(self, uri, cache=None):
+-        from DAV.errors import DAV_Forbidden
++        from pywebdav.errors import DAV_Forbidden
+         object_name, object_id = self._uri2object(uri, cache=cache)
+         if object_name != 'webdav.collection' \
+                 or not object_id:
+@@ -551,7 +590,7 @@
+         return 200
+ 
+     def rm(self, uri, cache=None):
+-        from DAV.errors import DAV_Forbidden
++        from pywebdav.errors import DAV_Forbidden
+         object_name, object_id = self._uri2object(uri, cache=cache)
+         if not object_name:
+             raise DAV_Forbidden
+@@ -578,9 +617,75 @@
+ Collection()
+ 
+ 
++class Share(ModelSQL, ModelView):
++    "Share"
++    _name = 'webdav.share'
++    _description = __doc__
++    _rec_name = 'key'
++
++    path = fields.Char('Path', required=True, select=True)
++    key = fields.Char('Key', required=True, select=True,
++        states={
++            'readonly': True,
++            })
++    user = fields.Many2One('res.user', 'User', required=True)
++    expiration_date = fields.Date('Expiration Date', required=True)
++    note = fields.Text('Note')
++    url = fields.Function(fields.Char('URL'), 'get_url')
++
++    def default_key(self):
++        return uuid.uuid4().hex
++
++    def default_user(self):
++        return Transaction().user
++
++    def default_expiration_date(self):
++        return datetime.date.today() + relativedelta(months=1)
++
++    def get_url(self, ids, name):
++        urls = {}
++        webdav_url = get_webdav_url()
++        for share in self.browse(ids):
++            urls[share.id] = urlparse.urljoin(webdav_url,
++                urlparse.urlunsplit((None, None, urllib.quote(share.path),
++                        urllib.urlencode([('key', share.key)]), None)))
++        return urls
++
++    def match(self, share, command, path):
++        "Test if share match with command and path"
++        today = datetime.date.today()
++        return (path.startswith(share.path)
++            and share.expiration_date > today
++            and command == 'GET')
++
++    def get_login(self, key, command, path):
++        """Validate the key for the command and path
++        Return the user id if succeed or None
++        """
++        share_ids = self.search([
++                ('key', '=', key),
++                ])
++        if not share_ids:
++            return None
++        for share in self.browse(share_ids):
++            if self.match(share, command, path):
++                return share.user.id
++        return None
++
++Share()
++
++
+ class Attachment(ModelSQL, ModelView):
+     _name = 'ir.attachment'
+ 
++    path = fields.Function(fields.Char('Path'), 'get_path')
++    url = fields.Function(fields.Char('URL'), 'get_url')
++    shares = fields.Function(fields.One2Many('webdav.share', None, 'Shares',
++            domain=[
++                ('path', '=', Eval('path')),
++                ],
++            depends=['path']), 'get_shares', 'set_shares')
++
+     def __init__(self):
+         super(Attachment, self).__init__()
+         self._constraints += [
+@@ -605,4 +710,99 @@
+                             return False
+         return True
+ 
++    def get_path(self, ids, name):
++        pool = Pool()
++        collection_obj = pool.get('webdav.collection')
++        paths = dict((x, False) for x in ids)
++
++        attachments = self.browse(ids)
++        resources = {}
++        resource2attachments = {}
++        for attachment in attachments:
++            if not attachment.resource:
++                paths[attachment.id] = False
++            model_name, record_id = attachment.resource.split(',')
++            record_id = int(record_id)
++            resources.setdefault(model_name, set()).add(record_id)
++            resource2attachments.setdefault((model_name, record_id),
++                []).append(attachment)
++        collection_ids = collection_obj.search([
++                ('model.model', 'in', resources.keys()),
++                ])
++        for collection in collection_obj.browse(collection_ids):
++            model_name = collection.model.model
++            model_obj = pool.get(model_name)
++            ids = list(resources[model_name])
++            domain = safe_eval(collection.domain or '[]')
++            domain = [domain, ('id', 'in', ids)]
++            record_ids = model_obj.search(domain)
++            for record in model_obj.browse(record_ids):
++                for attachment in resource2attachments[
++                        (model_name, record.id)]:
++                    paths[attachment.id] = '/'.join((collection.rec_name,
++                            record.rec_name + '-' + str(record.id),
++                            attachment.name))
++        if 'webdav.collection' in resources:
++            collection_ids = list(resources['webdav.collection'])
++            for collection in collection_obj.browse(collection_ids):
++                for attachment in resource2attachments[
++                        ('webdav.collection', collection.id)]:
++                    paths[attachment.id] = '/'.join((collection.rec_name,
++                            attachment.name))
++        return paths
++
++    def get_url(self, ids, name):
++        webdav_url = get_webdav_url()
++        urls = {}
++        for attachment in self.browse(ids):
++            urls[attachment.id] = urlparse.urljoin(webdav_url,
++                urllib.quote(attachment.path))
++        return urls
++
++    def get_shares(self, ids, name):
++        share_obj = Pool().get('webdav.share')
++        shares = dict((x, []) for x in ids)
++        attachements = self.browse(ids)
++        path2attachement = dict((a.path, a) for a in attachements)
++        share_ids = share_obj.search([
++                ('path', 'in', path2attachement.keys()),
++                ])
++        for share in share_obj.browse(share_ids):
++            attachment = path2attachement[share.path]
++            shares[attachment.id].append(share.id)
++        return shares
++
++    def set_shares(self, ids, name, value):
++        share_obj = Pool().get('webdav.share')
++
++        if not value:
++            return
++
++        attachments = self.browse(ids)
++        for action in value:
++            if action[0] == 'create':
++                for attachment in attachments:
++                    action[1]['path'] = attachment.path
++                    share_obj.create(action[1])
++            elif action[0] == 'write':
++                share_obj.write(action[1], action[2])
++            elif action[0] == 'delete':
++                share_obj.delete(action[1])
++            elif action[0] == 'delete_all':
++                paths = [a.path for a in attachments]
++                share_ids = share_obj.search([
++                        ('path', 'in', paths),
++                        ])
++                share_obj.delete(share_ids)
++            elif action[0] == 'unlink':
++                pass
++            elif action[0] == 'add':
++                pass
++            elif action[0] == 'unlink_all':
++                pass
++            elif action[0] == 'set':
++                pass
++            else:
++                raise Exception('Bad arguments')
++
+ Attachment()
+--- tryton-server.orig/CHANGELOG	2012-09-11 19:41:40.000000000 +0200
++++ tryton-server/CHANGELOG	2012-09-12 16:07:24.620219292 +0200
+@@ -7,6 +7,7 @@
+ Version 2.2.2 - 2012-03-28
+ * Bug fixes (see mercurial logs for details)
+ * Don't allow rpc call on ModelStorage without ModelView (CVE-2012-0215)
++* Add shared WebDAV
+ 
+ Version 2.2.1 - 2011-12-26
+ * Bug fixes (see mercurial logs for details)
+--- tryton-server.orig/doc/topics/install.rst	2011-10-24 15:57:45.000000000 +0200
++++ tryton-server/doc/topics/install.rst	2012-09-12 16:07:24.620219292 +0200
+@@ -15,7 +15,7 @@
+     * polib (https://bitbucket.org/izi/polib/wiki/Home)
+     * Optional: psycopg 2 or later (http://www.initd.org/)
+     * Optional: MySQL-python (http://sourceforge.net/projects/mysql-python/)
+-    * Optional: pywebdav 0.9.3 or later (http://code.google.com/p/pywebdav/)
++    * Optional: pywebdav 0.9.8 or later (http://code.google.com/p/pywebdav/)
+     * Optional: pydot (http://code.google.com/p/pydot/)
+     * Optional: pytz (http://pytz.sourceforge.net/)
+     * Optional: unoconv http://dag.wieers.com/home-made/unoconv/)
+--- tryton-server.orig/etc/trytond.conf	2012-09-12 16:04:53.000000000 +0200
++++ tryton-server/etc/trytond.conf	2012-09-12 16:07:24.620219292 +0200
+@@ -2,13 +2,13 @@
+ #this repository contains the full copyright notices and license terms.
+ [options]
+ 
+-# This is the hostname used when generating tryton URI
+-#hostname =
+-
+ # Activate the json-rpc protocol
+ jsonrpc = localhost:8000
+ #ssl_jsonrpc = False
+ 
++# This is the hostname used when generating tryton URI
++#hostname_jsonrpc =
++
+ # Configure the path of json-rpc data
+ #jsondata_path = /var/www/localhost/tryton
+ 
+@@ -20,6 +20,9 @@
+ #webdav = *:8080
+ #ssl_webdav = False
+ 
++# This is the hostname used when generating WebDAV URI
++#hostname_webdav =
++
+ # Configure the database type
+ # allowed values are postgresql, sqlite, mysql
+ #db_type = postgresql
+--- tryton-server.orig/setup.py	2011-10-24 15:57:45.000000000 +0200
++++ tryton-server/setup.py	2012-09-12 16:07:24.620219292 +0200
+@@ -65,7 +65,7 @@
+     extras_require={
+         'PostgreSQL': ['psycopg2 >= 2.0'],
+         'MySQL': ['MySQL-python'],
+-        'WebDAV': ['PyWebDAV >= 0.9.3'],
++        'WebDAV': ['PyWebDAV >= 0.9.8'],
+         'unoconv': ['unoconv'],
+         'SSL': ['pyOpenSSL'],
+         'graphviz': ['pydot'],
+--- tryton-server.orig/trytond/config.py	2012-03-17 11:25:18.000000000 +0100
++++ tryton-server/trytond/config.py	2012-09-12 16:07:24.620219292 +0200
+@@ -24,14 +24,15 @@
+ class ConfigManager(object):
+     def __init__(self, fname=None):
+         self.options = {
+-            'hostname': None,
+             'jsonrpc': [('localhost', 8000)],
+             'ssl_jsonrpc': False,
++            'hostname_jsonrpc': None,
+             'xmlrpc': [],
+             'ssl_xmlrpc': False,
+             'jsondata_path': '/var/www/localhost/tryton',
+             'webdav': [],
+             'ssl_webdav': False,
++            'hostname_webdav': None,
+             'db_type': 'postgresql',
+             'db_host': False,
+             'db_port': False,
+--- tryton-server.orig/trytond/tests/test_mixins.py	2011-12-06 11:28:56.000000000 +0100
++++ tryton-server/trytond/tests/test_mixins.py	2012-09-12 16:07:24.624219161 +0200
+@@ -30,7 +30,7 @@
+                     urllib.quote(DB_NAME)))
+ 
+             server_name = 'michaelscott.paper.test'
+-            CONFIG['hostname'] = server_name
++            CONFIG['hostname_jsonrpc'] = server_name
+             self.assertEqual(self.urlmodel.get_url(),
+                 'tryton://%s/%s/model/test.urlobject' % (server_name,
+                     urllib.quote(DB_NAME)))
+@@ -38,13 +38,13 @@
+     def testWizardURL(self):
+         "Test wizard URLs"
+         with Transaction().start(DB_NAME, USER, context=CONTEXT):
+-            CONFIG['hostname'] = None
++            CONFIG['hostname_jsonrpc'] = None
+             self.assertEqual(self.urlwizard.get_url(),
+                 'tryton://%s/%s/wizard/test.test_wizard' % (self.hostname,
+                     urllib.quote(DB_NAME)))
+ 
+             server_name = 'michaelscott.paper.test'
+-            CONFIG['hostname'] = server_name
++            CONFIG['hostname_jsonrpc'] = server_name
+             self.assertEqual(self.urlwizard.get_url(),
+                 'tryton://%s/%s/wizard/test.test_wizard' % (server_name,
+                     urllib.quote(DB_NAME)))
+--- tryton-server.orig/trytond/url.py	2011-10-24 15:57:46.000000000 +0200
++++ tryton-server/trytond/url.py	2012-09-12 16:07:24.624219161 +0200
+@@ -16,7 +16,8 @@
+         from trytond.wizard import Wizard
+         from trytond.report import Report
+ 
+-        hostname = CONFIG['hostname'] or unicode(socket.getfqdn(), 'utf8')
++        hostname = (CONFIG['hostname_jsonrpc']
++            or unicode(socket.getfqdn(), 'utf8'))
+         hostname = '.'.join(encodings.idna.ToASCII(part) for part in
+             hostname.split('.'))
+ 
+--- tryton-server.orig/trytond/webdav/webdav.xml	2011-10-24 15:57:46.000000000 +0200
++++ tryton-server/trytond/webdav/webdav.xml	2012-09-12 16:07:24.624219161 +0200
+@@ -105,5 +105,122 @@
+             <field name="menu" ref="menu_collection_list"/>
+             <field name="group" ref="res.group_admin"/>
+         </record>
++
++        <record model="ir.ui.view" id="share_view_list">
++            <field name="model">webdav.share</field>
++            <field name="type">tree</field>
++            <field name="arch" type="xml">
++                <![CDATA[
++                <tree string="Shares">
++                    <field name="path"/>
++                    <field name="user"/>
++                    <field name="expiration_date"/>
++                </tree>
++                ]]>
++            </field>
++        </record>
++
++        <record model="ir.ui.view" id="share_view_form">
++            <field name="model">webdav.share</field>
++            <field name="type">form</field>
++            <field name="arch" type="xml">
++                <![CDATA[
++                <form string="Share">
++                    <label name="path"/>
++                    <field name="path"/>
++                    <label name="key"/>
++                    <field name="key"/>
++                    <label name="user"/>
++                    <field name="user"/>
++                    <label name="expiration_date"/>
++                    <field name="expiration_date"/>
++                    <label name="url"/>
++                    <group id="url" colspan="2">
++                        <field name="url"/>
++                        <field name="url" widget="url"/>
++                    </group>
++                    <notebook>
++                        <page name="note">
++                            <field name="note" colspan="4"/>
++                        </page>
++                    </notebook>
++                </form>
++                ]]>
++            </field>
++        </record>
++
++        <record model="ir.action.act_window" id="act_share_list">
++            <field name="name">Shares</field>
++            <field name="type">ir.action.act_window</field>
++            <field name="res_model">webdav.share</field>
++        </record>
++        <record model="ir.action.act_window.view" id="act_share_list_view1">
++            <field name="sequence" eval="10"/>
++            <field name="view" ref="share_view_list"/>
++            <field name="act_window" ref="act_share_list"/>
++        </record>
++        <record model="ir.action.act_window.view" id="act_share_list_view2">
++            <field name="sequence" eval="20"/>
++            <field name="view" ref="share_view_form"/>
++            <field name="act_window" ref="act_share_list"/>
++        </record>
++        <menuitem parent="menu_webdav" action="act_share_list"
++            id="menu_share_list"/>
++
++        <record model="ir.rule.group" id="rule_group_share">
++            <field name="model" search="[('model', '=', 'webdav.share')]"/>
++            <field name="global_p" eval="False"/>
++            <field name="default_p" eval="True"/>
++            <field name="perm_read" eval="True"/>
++            <field name="perm_write" eval="True"/>
++            <field name="perm_create" eval="True"/>
++            <field name="perm_delete" eval="True"/>
++        </record>
++        <record model="ir.rule" id="rule_share">
++            <field name="field"
++                search="[('name', '=', 'user'), ('model.model', '=', 'webdav.share')]"/>
++            <field name="operator">=</field>
++            <field name="operand">User</field>
++            <field name="rule_group" ref="rule_group_share"/>
++        </record>
++
++        <record model="ir.rule.group" id="rule_group_share_admin">
++            <field name="model" search="[('model', '=', 'webdav.share')]"/>
++            <field name="global_p" eval="False"/>
++            <field name="default_p" eval="False"/>
++            <field name="perm_read" eval="True"/>
++            <field name="perm_write" eval="True"/>
++            <field name="perm_create" eval="True"/>
++            <field name="perm_delete" eval="True"/>
++        </record>
++        <record model="ir.rule.group-res.group"
++            id="rule_group_share_admin_group_admin">
++            <field name="rule_group" ref="rule_group_share_admin"/>
++            <field name="group" ref="res.group_admin"/>
++        </record>
++
++        <record model="ir.ui.view" id="attachment_view_form">
++            <field name="model">ir.attachment</field>
++            <field name="type">form</field>
++            <field name="inherit" ref="ir.attachment_view_form"/>
++            <field name="arch" type="xml">
++              <![CDATA[
++              <data>
++                  <xpath expr="/form/notebook/page[@name='description']"
++                      position="after">
++                      <page string="WebDAV" id="webdav">
++                          <label name="url"/>
++                          <group id="url">
++                              <field name="url"/>
++                              <field name="url" widget="url"/>
++                          </group>
++                          <field name="shares" colspan="4"/>
++                      </page>
++                  </xpath>
++              </data>
++              ]]>
++          </field>
++      </record>
++
+     </data>
+ </tryton>

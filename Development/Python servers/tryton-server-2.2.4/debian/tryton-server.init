@@ -1,0 +1,99 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:             tryton-server
+# Required-Start:       $syslog $remote_fs
+# Required-Stop:        $syslog $remote_fs
+# Should-Start:         $network postgresql mysql
+# Should-Stop:          $network postgresql mysql
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Application Platform
+# Description:          Tryton is an Application Platform serving as a base for
+#                       a complete ERP software.
+### END INIT INFO
+
+PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+DAEMON="/usr/bin/trytond"
+
+test -x "${DAEMON}" || exit 0
+
+NAME="trytond"
+DESC="Tryton Application Platform"
+DAEMONUSER="tryton"
+PIDDIR="/var/run/${NAME}"
+PIDFILE="${PIDDIR}/${NAME}.pid"
+LOGFILE="/var/log/tryton/${NAME}.log"
+DEFAULTS="/etc/default/tryton-server"
+CONFIGFILE="/etc/${NAME}.conf"
+DAEMON_OPTS="--config=${CONFIGFILE} --logfile=${LOGFILE}"
+
+# Include tryton-server defaults if available
+if [ -r "${DEFAULTS}" ]
+then
+	. "${DEFAULTS}"
+fi
+
+. /lib/lsb/init-functions
+
+# Make sure trytond is started with configured locale
+if [ -n "${LANG}" ]
+then
+	LANG="${LANG}"
+	export LANG
+fi
+
+set -e
+
+do_start ()
+{
+	if [ ! -d "${PIDDIR}" ]
+	then
+		mkdir -p "${PIDDIR}"
+		chown "${DAEMONUSER}":"${DAEMONUSER}" "${PIDDIR}"
+	fi
+
+	start-stop-daemon --start --quiet --pidfile ${PIDFILE} \
+		--chuid ${DAEMONUSER} --background --make-pidfile \
+		--exec ${DAEMON} -- ${DAEMON_OPTS}
+}
+
+do_stop ()
+{
+	start-stop-daemon --stop --quiet --pidfile ${PIDFILE} --oknodo
+}
+
+case "${1}" in
+	start)
+		log_daemon_msg "Starting ${DESC}" "${NAME}"
+		do_start
+		log_end_msg ${?}
+		;;
+
+	stop)
+		log_daemon_msg "Stopping ${DESC}" "${NAME}"
+		do_stop
+		log_end_msg ${?}
+		;;
+
+	restart|force-reload)
+		log_daemon_msg "Restarting ${DESC}" "${NAME}"
+		do_stop
+		sleep 1
+		do_start
+		log_end_msg ${?}
+	;;
+
+	status)
+		status_of_proc -p ${PIDFILE} ${DAEMON} ${NAME} && \
+		exit 0 || exit ${?}
+	;;
+
+	*)
+		N="/etc/init.d/${NAME}"
+		echo "Usage: ${N} {start|stop|restart|force-reload|status}" >&2
+		exit 1
+		;;
+esac
+
+exit 0
