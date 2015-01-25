@@ -22,7 +22,7 @@ from ardukeyauth.sqlitewrapper import SQLiteWrapper
 
 def listArduKeys():
     """
-    Lists all available ArduKeys.
+    List all available ArduKeys.
 
     @return boolean
     """
@@ -65,7 +65,7 @@ def listArduKeys():
 
 def addArduKey(publicId, secretId, aesKey):
     """
-    Adds a ArduKey.
+    Add a new ArduKey.
 
     @param string publicId
     The public id of ArduKey.
@@ -138,7 +138,7 @@ def addArduKey(publicId, secretId, aesKey):
 
 def revokeArduKey(publicId):
     """
-    Revokes a ArduKey.
+    Revoke an ArduKey.
 
     @param string publicId
     The public id of ArduKey.
@@ -196,7 +196,7 @@ def revokeArduKey(publicId):
 
 def deleteArduKey(publicId):
     """
-    Deletes a ArduKey.
+    Delete an ArduKey.
 
     @param string publicId
     The public id of ArduKey.
@@ -247,7 +247,7 @@ def deleteArduKey(publicId):
 
 def listAPIKeys():
     """
-    Lists all available API keys.
+    List all available API keys.
 
     @return boolean
     """
@@ -286,7 +286,7 @@ def listAPIKeys():
 
 def generateAPIKey():
     """
-    Generates a new API key.
+    Generate a new API key.
 
     @return boolean
     """
@@ -320,7 +320,7 @@ def generateAPIKey():
 
 def revokeAPIKey(apiId):
     """
-    Revokes a API key.
+    Revoke an API key.
 
     @param string apiId
     The id of the API key.
@@ -387,7 +387,7 @@ if ( __name__ == '__main__' ):
     parser.add_argument('-v', '--version',
                         action='version',
                         version='ArduKey authserver configuration tool ' + VERSION,
-                        help='Prints version and exits.'
+                        help='Print version and exit.'
                        )
 
     ardukeyGroup = parser.add_argument_group('ArduKey management')
@@ -397,7 +397,7 @@ if ( __name__ == '__main__' ):
                         action='store_true',
                         default=False,
                         required=False,
-                        help='Lists all available ArduKeys.'
+                        help='List all available ArduKeys.'
                        )
 
     ardukeyGroup.add_argument('--add-ardukey',
@@ -406,7 +406,7 @@ if ( __name__ == '__main__' ):
                         required=False,
                         nargs=3,
                         metavar=('PUBLICID', 'SECRETID', 'AESKEY'),
-                        help='Adds a new ArduKey.'
+                        help='Add a new ArduKey.'
                        )
 
     ardukeyGroup.add_argument('--revoke-ardukey',
@@ -416,7 +416,7 @@ if ( __name__ == '__main__' ):
                         nargs=1,
                         metavar='PUBLICID',
                         type=str,
-                        help='Revokes an ArduKey.'
+                        help='Revoke an ArduKey.'
                        )
 
     ardukeyGroup.add_argument('--delete-ardukey',
@@ -426,21 +426,21 @@ if ( __name__ == '__main__' ):
                         nargs=1,
                         metavar='PUBLICID',
                         type=str,
-                        help='Deletes an ArduKey.'
+                        help='Delete an ArduKey.'
                        )
 
     apikeyGroup.add_argument('--list-apikeys',
                         action='store_true',
                         default=False,
                         required=False,
-                        help='Lists all available API keys.'
+                        help='List all available API keys.'
                        )
 
     apikeyGroup.add_argument('--generate-apikey',
                         action='store_true',
                         default=False,
                         required=False,
-                        help='Generates a new API key.'
+                        help='Generate a new API key.'
                        )
 
     apikeyGroup.add_argument('--revoke-apikey',
@@ -450,7 +450,7 @@ if ( __name__ == '__main__' ):
                         nargs=1,
                         metavar='APIID',
                         type=int,
-                        help='Revokes an API key.'
+                        help='Revoke an API key.'
                        )
 
     args = vars(parser.parse_args())

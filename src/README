@@ -10,7 +10,7 @@ First you have to install the server via your package manager. For example:
 
 ~# apt-get install ardukey-auth-server
 
-Important note: You need to add the "PM Codeworks" repository first. See
+Important note: First you need to add the "PM Codeworks" repository. See
 http://www.pm-codeworks.de/repository.html for the instructions.
 
 
@@ -27,7 +27,7 @@ install the packages with "dpkg":
 
 ~# dpkg -i ../*.deb
 
-And fix the dependency problems, if occured:
+And fix the dependency problems, if occurred:
 
 ~# apt-get -f install
 
@@ -35,22 +35,22 @@ And fix the dependency problems, if occured:
 ## Maintaining
 ##
 
-First add an ArduKey with following command:
+First add an ArduKey with the following command:
 
 ~# ardukey-auth-conf --add-ardukey cccccccccccb b0d4a2d69bc4 7a1858592fcb76bd5eb2685421aed45e
 
-So an ArduKey with public id "cccccccccccb", the secret id "b0d4a2d69bc4" and
+An ArduKey with the public id "cccccccccccb", the secret id "b0d4a2d69bc4" and
 the AES key "7a1858592fcb76bd5eb2685421aed45e" will be added.
 
-Now, generate a new API id to be able to sign your requests to auth server:
+Now, generate an API key to be able to sign your requests to your auth server:
 
 ~# ardukey-auth-conf --generate-apikey
 
 The command outputs the "API id" and the "Shared secret". Every system/service
-that wants to communicate with the auth server needs its *own* API key!
+which wants to communicate with the auth server needs its *own* API key!
 
 For example an administrator who wants to set up an ArduKey PAM module on his
-server needs one API key to be able to use auth server.
+server needs one API key to be able to use his auth server.
 
 
 ## Request structure
@@ -76,12 +76,13 @@ request parameter values: hmac = SHA256(apiId + otp + nonce)
 ## Debugging start
 ##
 
-You can also start the server in debugging mode. First shut down server:
+You can also start the server in debugging mode. First shut down the
+"ardukey-auth-server" service which runs on the server:
 
 ~# /etc/init.d/ardukey-auth-server stop
 
-Than start in debugging mode:
+Than start service in debugging mode:
 
 ~# ardukey-auth-server --debug
 
-Now you will see all debugging output from the server.
+Now you will see all debugging output from the ardukey-auth-server.
