@@ -56,11 +56,11 @@ class SQLiteWrapper(object):
 
         """
 
-        ## Gets database file from config
+        ## Get database file from config
         configReader = ardukeyauth.configreader.ConfigReader()
         databaseFilePath = configReader.get('database_file')
 
-        ## Checks if path/file is writable
+        ## Check if path/file is writable
         if ( os.access(databaseFilePath, os.W_OK) == False ):
             raise ValueError('The database file "' + databaseFilePath + '" is not writable!')
 
@@ -73,6 +73,6 @@ class SQLiteWrapper(object):
 
         """
 
-        ## Closes connection (all uncommited changes will be lost)
+        ## Close connection (all uncommited changes will be lost)
         if ( self.connection is not None ):
             self.connection.close()

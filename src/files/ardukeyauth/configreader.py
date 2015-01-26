@@ -35,7 +35,7 @@ class ConfigReader(object):
         The path to the configuration file.
         """
 
-        ## Checks if path/file is readable
+        ## Check if path/file is readable
         if ( os.access(filePath, os.R_OK) == False ):
             raise ValueError('The configuration file "' + filePath + '" is not readable!')
 
@@ -46,7 +46,7 @@ class ConfigReader(object):
 
     def get(self, key, default = None):
         """
-        Gets a option by key.
+        Get a option by key.
 
         @param string key
         The option key.

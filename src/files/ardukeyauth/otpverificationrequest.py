@@ -43,7 +43,7 @@ class OTPVerificationRequest(object):
 
     def getParameters(self):
         """
-        Returns the request parameters.
+        Return the request parameters.
 
         @return dict
         """
@@ -52,7 +52,7 @@ class OTPVerificationRequest(object):
 
     def getHmac(self):
         """
-        Returns the request Hmac.
+        Return the request Hmac.
 
         @return str
         """

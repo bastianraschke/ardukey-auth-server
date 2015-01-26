@@ -100,7 +100,7 @@ class OTPVerification(object):
             ## Otherwise the response hmac would leak revokation status!
             self.__sharedSecret = sharedSecret
 
-            ## Calculates hmac of request to verify authenticity
+            ## Calculate hmac of request to verify authenticity
             requestHmac = self.__calculateHmac(requestParameters)
 
             ## Compare request hmac hashes
@@ -143,7 +143,7 @@ class OTPVerification(object):
 
     def __calculateHmac(self, data):
         """
-        Calculates hmac of given dictionary and returns it as a hexadecimal string.
+        Calculate hmac of given dictionary and return it as a hexadecimal string.
 
         @param dict data
         The dictionary that contains data.
@@ -155,7 +155,7 @@ class OTPVerification(object):
         if ( type(data) != dict ):
             raise ValueError('The given data is not a dictionary!')
 
-        ## Checks if shared secret is given
+        ## Check if shared secret is given
         if ( len(self.__sharedSecret) == 0 ):
             raise ValueError('No shared secret given to perform hmac calculation!')
 
@@ -173,7 +173,7 @@ class OTPVerification(object):
 
     def __decodeArduHex(self, arduhexString):
         """
-        Converts a given arduhex string to hexadecimal string.
+        Convert a given arduhex string to hexadecimal string.
 
         @param string arduhexString
         The arduhex string to convert.
@@ -216,7 +216,7 @@ class OTPVerification(object):
 
     def __decryptAES(self, aesKey, cipherText):
         """
-        Decrypts (AES-ECB) given cipher text and returns plain text as hexadecimal string.
+        Decrypt given cipher text (AES-ECB) and return plain text as hexadecimal string.
 
         @param string aesKey
         The used AES key as hexadecimal string.
@@ -243,7 +243,7 @@ class OTPVerification(object):
 
     def __calculateCRC16(self, hexString):
         """
-        Calculates the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
+        Calculate the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
 
         @param string hexString
         The hexadecimal string used by calculation.
@@ -276,7 +276,7 @@ class OTPVerification(object):
 
     def __verifyOTP(self, otp):
         """
-        Validates the OTP.
+        Validate a OTP.
 
         @param string otp
         The OTP to validate.
@@ -403,12 +403,12 @@ class OTPVerification(object):
 
     def getResponse(self):
         """
-        Returns the complete response.
+        Return the complete response.
 
         @return dictionary
         """
 
-        ## Sets current datetime
+        ## Set current datetime
         self.__response['time'] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
         ## Unset old hmac
