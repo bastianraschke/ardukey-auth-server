@@ -60,34 +60,41 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        url = urllib.parse.urlparse(self.path, 'http')
+        try:
+            url = urllib.parse.urlparse(self.path, 'http')
 
-        ## Default request path
-        if (url.path == '/ardukeyotp/1.0/verify'):
+            ## Default request path
+            if (url.path == '/ardukeyotp/1.0/verify'):
 
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/plain')
+                self.end_headers()
 
-            ## Deligate request to verification class
-            verification = OTPVerification(OTPVerificationRequest(url.query))
-            verificationResponse = verification.getResponse();
+                ## Deligate request
+                verificationRequest = OTPVerificationRequest(url.query)
+                verification = OTPVerification(verificationRequest)
 
-            ## Send JSON formatted response
-            output = json.dumps(verificationResponse, indent='\t', sort_keys=True)
-            self.send_output(output)
+                verificationResponse = verification.getResponse();
 
-        ## Fallback message
-        else:
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html')
-            self.end_headers()
+                ## Send JSON formatted response
+                output = json.dumps(verificationResponse, indent='\t', sort_keys=True)
+                self.send_output(output)
 
-            self.send_output('<!DOCTYPE html>')
-            self.send_output('<html><head><title>' + self.server_version + '</title></head><body>')
-            self.send_output('<h1>' + self.server_version + '</h1>')
-            self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
-            self.send_output('</body></html>')
+            ## Fallback message
+            else:
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+
+                self.send_output('<!DOCTYPE html>')
+                self.send_output('<html><head><title>' + self.server_version + '</title></head><body>')
+                self.send_output('<h1>' + self.server_version + '</h1>')
+                self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
+                self.send_output('</body></html>')
+
+        except:
+            ## General unexpected server errors
+            logging.getLogger().error('Unexpected server error occured:', exc_info=1)
 
 
 if ( __name__ == '__main__' ):
@@ -145,11 +152,9 @@ if ( __name__ == '__main__' ):
         logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
                     'Listening on ' + serverAddress + ':' + serverPort)
 
+        ## Serve and never return back
         httpServer.serve_forever()
 
     except KeyboardInterrupt:
         httpServer.socket.close()
         print('KeyboardInterrupt received, shutting down ArduKey authserver...')
-
-    ## Default exit
-    sys.exit(0)

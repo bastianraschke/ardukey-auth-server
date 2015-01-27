@@ -136,9 +136,9 @@ class OTPVerification(object):
             logging.getLogger().debug('Missing the request parameter: ' + str(e))
             self.__response['status'] = 'MISSING_PARAMETER'
 
-        except Exception:
-            ## General unexpected errors
-            logging.getLogger().error('Unexpected exception occured:', exc_info=1)
+        except:
+            ## General unexpected verification errors
+            logging.getLogger().error('Unexpected error occured during verification:', exc_info=1)
             self.__response['status'] = 'SERVER_ERROR'
 
     def __calculateHmac(self, data):
@@ -311,7 +311,7 @@ class OTPVerification(object):
         ## Get required information from database
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
-            SELECT secretid, counter, sessioncounter, timestamp, aeskey, enabled
+            SELECT secretid, counter, sessioncounter, timestamp, aeskey, modified, enabled
             FROM ARDUKEY
             WHERE publicid = ?
             ''', [
@@ -326,7 +326,8 @@ class OTPVerification(object):
             oldSessionCounter = int(rows[0][2])
             oldTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
-            enabled = rows[0][5]
+            modified = rows[0][5]
+            enabled = rows[0][6]
         else:
             logging.getLogger().debug('The ArduKey "' + publicId + '" was not found in database!')
             return False
@@ -389,7 +390,7 @@ class OTPVerification(object):
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
-            SET counter = ?, sessioncounter = ?, timestamp = ?
+            SET counter = ?, sessioncounter = ?, timestamp = ?, modified = DATETIME()
             WHERE publicid = ? AND enabled = 1
             ''', [
             token['counter'],
