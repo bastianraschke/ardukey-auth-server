@@ -101,7 +101,7 @@ if ( __name__ == '__main__' ):
         serverPort = configReader.get('server_port')
 
     except:
-        sys.stderr.write('Error: The config file could not be read correctly:\n\n')
+        sys.stderr.write('Error: The configuration file could not be read correctly:\n\n')
         sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 
@@ -109,23 +109,25 @@ if ( __name__ == '__main__' ):
     try:
         logger = logging.getLogger()
 
-        ## Enable debugging if "--debug" flag is given
+        ## Enable debug logging if "--debug" flag is given
         if ( '--debug' in sys.argv ):
-            logger.setLevel(logging.DEBUG)
+            loggingLevel = logging.DEBUG
         else:
-            logger.setLevel(logging.INFO)
+            loggingLevel = logging.INFO
+
+        logger.setLevel(loggingLevel)
 
         logFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
         ## Stream output handler
         strmHandler = logging.StreamHandler()
-        strmHandler.setLevel(logging.DEBUG)
+        strmHandler.setLevel(loggingLevel)
         strmHandler.setFormatter(logFormatter)
         logger.addHandler(strmHandler)
 
         ## Logging file handler
         fileHandler = logging.FileHandler(logFilePath)
-        fileHandler.setLevel(logging.INFO)
+        fileHandler.setLevel(loggingLevel)
         fileHandler.setFormatter(logFormatter)
         logger.addHandler(fileHandler)
 
@@ -135,7 +137,11 @@ if ( __name__ == '__main__' ):
 
     ## Try to start HTTP server
     try:
-        httpServer = http.server.HTTPServer((serverAddress, int(serverPort)), ArduKeyAuthserver)
+        httpServer = http.server.HTTPServer(
+            (serverAddress, int(serverPort)),
+            ArduKeyAuthserver
+        )
+
         logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
                     'Listening on ' + serverAddress + ':' + serverPort)
 

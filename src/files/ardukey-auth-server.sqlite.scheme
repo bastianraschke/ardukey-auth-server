@@ -5,6 +5,7 @@ CREATE TABLE API
 (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   secret TEXT(64) NOT NULL,
+  modified DATE NOT NULL,
   created DATE NOT NULL,
   enabled INTEGER(1) NOT NULL DEFAULT 1
 );
@@ -17,6 +18,7 @@ CREATE TABLE ARDUKEY
   sessioncounter INTEGER(3) NOT NULL DEFAULT 0,
   timestamp INTEGER(8) DEFAULT 0,
   aeskey TEXT(32) NOT NULL,
+  modified DATE NOT NULL,
   created DATE NOT NULL,
   enabled INTEGER(1) NOT NULL DEFAULT 1
 );
