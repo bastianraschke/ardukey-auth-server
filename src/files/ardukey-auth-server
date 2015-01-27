@@ -59,7 +59,16 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message.encode('utf-8'))
 
     def do_GET(self):
+        """
+        Handle the HTTP GET requests.
 
+        @return void
+        """
+
+        ## Workaround for unfunctional exception catching in method
+        ## httpServer.serve_forever(). It seems the method does not throw
+        ## occuring exceptions but handle them itself. The KeyboardInterrupt
+        ## exception seems to be an isolated case.
         try:
             url = urllib.parse.urlparse(self.path, 'http')
 
@@ -95,7 +104,6 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         except:
             ## General unexpected server errors
             logging.getLogger().error('Unexpected server error occured:', exc_info=1)
-
 
 if ( __name__ == '__main__' ):
 
