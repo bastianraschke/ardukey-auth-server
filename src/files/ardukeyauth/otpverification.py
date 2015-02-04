@@ -243,10 +243,10 @@ class OTPVerification(object):
 
     def __calculateCRC16(self, hexString):
         """
-        Calculate the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
+        Calculate the CRC16 (ISO 13239) checksum of given hexadecimal data.
 
         @param string hexString
-        The hexadecimal string used by calculation.
+        The hexadecimal data used by calculation.
 
         @return integer
         """
@@ -266,11 +266,14 @@ class OTPVerification(object):
             index = i*2
             currentByte = int(hexString[index:index+2], 16)
 
-            x = (crc >> 8) ^ currentByte
-            x = x ^ (x >> 4)
+            crc ^= currentByte & 0xFF
 
-            crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
-            crc = crc & 0xFFFF
+            for j in range(0, 8):
+                x = crc & 1
+                crc >>= 1
+
+                if (x):
+                    crc ^= 0x8408
 
         return crc
 
@@ -345,8 +348,8 @@ class OTPVerification(object):
         token = {}
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
-        token['sessionCounter'] = int(decryptedToken[16:18], 16)
-        token['timestamp'] = int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[22:24], 16)
+        token['timestamp'] = 0#int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[22:24], 16)
+        token['sessionCounter'] = int(decryptedToken[22:24], 16)
         token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
@@ -360,11 +363,8 @@ class OTPVerification(object):
 
         logging.getLogger().debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
 
-        ## Calculate CRC16 checksum of token
-        calculatedCRC = self.__calculateCRC16(decryptedToken[0:28])
-
-        ## Compare the given OTP checksum and calculated checksum
-        if ( token['crc'] != calculatedCRC ):
+        ## Checks if CRC16 checksum is correct
+        if ( self.__calculateCRC16(decryptedToken) != 0xF0B8 ):
             raise CurruptedOTPError('The checksum of the OTP is not correct!')
 
         ## Check if database secret id matches to value in OTP

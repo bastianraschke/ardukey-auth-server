@@ -1,6 +1,6 @@
 def __calculateCRC16(self, hexString):
     """
-    Calculates the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
+    Calculate the CRC16-CCITT (0xFFFF) checksum of given a hexadecimal string.
 
     @param string hexString
     The hexadecimal string used by calculation.
@@ -14,7 +14,7 @@ def __calculateCRC16(self, hexString):
         raise ValueError('The given hexadecimal string is not valid!')
 
     ## The count of bytes in hexadecimal string
-    byteCount = hexStringLength / 2
+    byteCount = int(hexStringLength / 2)
 
     crc = 0xFFFF
 
@@ -30,5 +30,3 @@ def __calculateCRC16(self, hexString):
         crc = crc & 0xFFFF
 
     return crc
-
-print(__calculateCRC16(None, 'b0d4a2d69bc427000000002ba1c3'))
