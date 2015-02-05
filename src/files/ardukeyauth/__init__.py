@@ -9,7 +9,7 @@ Copyright 2015 Bastian Raschke
 All rights reserved.
 """
 
-__version__ = '1.0'
+__version__ = '1.1'
 __copyright__ = 'Bastian Raschke'
 __organization__ = 'Bastian Raschke'
 __license__ = 'Simplified BSD License'

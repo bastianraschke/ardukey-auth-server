@@ -181,7 +181,7 @@ class OTPVerification(object):
         @return string
         """
 
-        ## Mapping (arduhex -> hexadecimal) table
+        ## Character mapping table
         table = {
             'c' : '0',
             'b' : '1',
@@ -325,18 +325,18 @@ class OTPVerification(object):
 
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
-            oldCounter = int(rows[0][1])
-            oldSessionCounter = int(rows[0][2])
-            oldTimestamp = int(rows[0][3])
+            seenCounter = int(rows[0][1])
+            seenSessionCounter = int(rows[0][2])
+            seenTimestamp = int(rows[0][3])
             aesKey = rows[0][4]
             modified = rows[0][5]
             enabled = rows[0][6]
         else:
-            logging.getLogger().debug('The ArduKey "' + publicId + '" was not found in database!')
+            logging.getLogger().info('The ArduKey "' + publicId + '" was not found in database!')
             return False
 
         if ( enabled == 0 ):
-            logging.getLogger().debug('The ArduKey "' + publicId + '" has been revoked!')
+            logging.getLogger().info('The ArduKey "' + publicId + '" has been revoked!')
             return False
 
         ## Decrypt encrypted token
@@ -348,22 +348,30 @@ class OTPVerification(object):
         token = {}
         token['secretId'] = decryptedToken[0:12]
         token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
-        token['timestamp'] = 0#int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[22:24], 16)
+        token['timestamp'] = int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[16:18], 16)
         token['sessionCounter'] = int(decryptedToken[22:24], 16)
         token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
         token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
 
-        ## Format the extracted data for easy debugging
-        explainedToken = 'counter = 0x{0:0>4X}; session = 0x{1:0>2X}; ' + \
-            'timestamp = 0x{2:0>6X}; random = 0x{3:0>4X}; ' + \
-            'crc = 0x{4:0>4X}'
+        ## Format the extracted token data for debugging
+        explainedTokenDebug = 'Raw token: {0:s} (' + \
+            'counter = 0x{1:0>4X}; ' + \
+            'timestamp = 0x{2:0>6X}; ' + \
+            'session = 0x{3:0>2X}; ' + \
+            'random = 0x{4:0>4X}; ' + \
+            'crc = 0x{5:0>4X})'
 
-        explainedToken = explainedToken.format(token['counter'],
-            token['sessionCounter'], token['timestamp'], token['random'], token['crc'])
+        explainedTokenDebug = explainedTokenDebug.format(
+            decryptedToken,
+            token['counter'],
+            token['timestamp'],
+            token['sessionCounter'],
+            token['random'],
+            token['crc']
+        )
+        logging.getLogger().debug(explainedTokenDebug)
 
-        logging.getLogger().debug('Raw token: ' + decryptedToken + ' (' + explainedToken + ')')
-
-        ## Checks if CRC16 checksum is correct
+        ## Check if CRC16 checksum is correct
         if ( self.__calculateCRC16(decryptedToken) != 0xF0B8 ):
             raise CurruptedOTPError('The checksum of the OTP is not correct!')
 
@@ -371,20 +379,20 @@ class OTPVerification(object):
         if ( token['secretId'] != secretId ):
             raise CurruptedOTPError('The secret id is not the same as in database!')
 
-        ## Check if the ArduKey has been re-plugged (counter is greater than old counter)
-        if ( token['counter'] <= oldCounter ):
+        ## TODO: Check if OTP and nonce already seen together?
+
+        ## General counter and session counter check
+        if ( token['counter'] <= seenCounter ):
 
             ## Check if session counter has been incremented
-            if ( token['sessionCounter'] <= oldSessionCounter ):
+            if ( token['sessionCounter'] <= seenSessionCounter ):
                 logging.getLogger().debug('The session counter is not greater than old value!')
                 return False
 
-            ## Check if timestamp has been incremented
-            if ( token['timestamp'] <= oldTimestamp ):
-                logging.getLogger().debug('The timestamp is not greater than old value!')
+            ## Check if token timestamp has been incremented
+            if ( token['timestamp'] <= seenTimestamp ):
+                logging.getLogger().debug('The token timestamp is not greater than old value!')
                 return False
-
-        ## TODO: Security revision
 
         ## Update the current values from OTP to database
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
@@ -399,6 +407,49 @@ class OTPVerification(object):
             publicId,
         ])
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().connection.commit()
+
+        ## TODO: Check if database values has been updated successfully?
+
+        ## Additional OTP phishing test:
+        ## Check the token timestamp if the ArduKey has NOT been re-plugged
+        if ( token['counter'] == seenCounter and token['sessionCounter'] > seenSessionCounter ):
+
+            ## The difference of current and seen token timestamp
+            tokenTimestampDiff = token['timestamp'] - seenTimestamp
+
+            ## Estimate number of seconds that *should* be elapsed
+            ## Note: The timestamp of an ArduKey increments 8 times per second.
+            estimatedElapsedSeconds = tokenTimestampDiff * (1/8)
+
+            ## Get datetime as unix timestamp when the last OTP has been processed
+            lastProcessingTimestamp = old ## TODO
+
+            ## Calculate elapsed seconds from last mo
+            currentTimestamp = now
+            elapsedSecondsSinceLastProcessing = currentTimestamp - lastProcessingTimestamp
+
+            ## Compare the estimated and calculated number seconds
+            secondsDeviation = abs(elapsedSecondsSinceLastProcessing - estimatedElapsedSeconds)
+
+            ## Format the phishing test results for debugging
+            phishingTestResult = 'OTP phishing test results: ' + \
+                'estimatedElapsedSeconds = {0:s}; ' + \
+                'elapsedSecondsSinceLastProcessing = {1:s}; ' + \
+                'secondsDeviation = {2:s}'
+
+            phishingTestResult = phishingTestResult.format(
+                estimatedElapsedSeconds,
+                elapsedSecondsSinceLastProcessing,
+                secondsDeviation
+            )
+            logging.getLogger().debug(phishingTestResult)
+
+            ## Decide if the difference of seconds is too wide to reject OTP
+            if ( secondsDeviation > 20 ):
+                logging.getLogger().info('The OTP phishing test failed!')
+                return False
+            else:
+                logging.getLogger().debug('The OTP phishing test passed!')
 
         return True
 
