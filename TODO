@@ -1,2 +1,1 @@
-- General security revision
 - Save nonce in database to avoid replay attacks?

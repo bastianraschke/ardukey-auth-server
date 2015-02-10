@@ -30,7 +30,7 @@ def listArduKeys():
     try:
         SQLiteWrapper.getInstance().cursor.execute(
             '''
-            SELECT publicid, secretid, counter, sessioncounter, timestamp,
+            SELECT publicid, secretid, counter, sessioncounter, timestamp, aeskey,
                    modified, created, enabled
             FROM ARDUKEY
             ORDER BY created ASC
@@ -45,11 +45,11 @@ def listArduKeys():
 
         ## Table listing approach - thanks to user "9000"
         ## see https://stackoverflow.com/questions/5084743
-        tableFormat = '{0:12} | {1:12} | {2:7} | {3:15} | {4:9} | {5:19} | {6:19} | {7:7}'
+        tableFormat = '{0:12} | {1:12} | {2:7} | {3:15} | {4:9} | {5:32} | {6:19} | {7:19} | {8:7}'
 
         ## Print table header
         print(tableFormat.format('Public ID', 'Secret ID', 'Counter',
-            'Session counter', 'Timestamp', 'Modified', 'Created', 'Enabled'))
+            'Session counter', 'Timestamp', 'AES key', 'Modified', 'Created', 'Enabled'))
 
         ## Print table data rows
         for row in rows:
@@ -119,7 +119,7 @@ def addArduKey(publicId, secretId, aesKey):
         SQLiteWrapper.getInstance().cursor.execute(
             '''
             INSERT INTO ARDUKEY(publicid, secretid, aeskey, modified, created)
-            VALUES(?, ?, ?, DATETIME(), DATETIME());
+            VALUES(?, ?, ?, DATETIME('now', 'localtime'), DATETIME('now', 'localtime'));
             ''', [
             publicId,
             secretId,
@@ -178,7 +178,7 @@ def revokeArduKey(publicId):
         SQLiteWrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
-            SET modified = DATETIME(), enabled = 0
+            SET enabled = 0
             WHERE publicid = ?
             ''', [
             publicId,
@@ -299,7 +299,7 @@ def generateAPIKey():
         SQLiteWrapper.getInstance().cursor.execute(
             '''
             INSERT INTO API(secret, modified, created)
-            VALUES(?, DATETIME(), DATETIME());
+            VALUES(?, DATETIME('now', 'localtime'), DATETIME('now', 'localtime'));
             ''', [
             sharedSecret,
         ])
@@ -357,7 +357,7 @@ def revokeAPIKey(apiId):
         SQLiteWrapper.getInstance().cursor.execute(
             '''
             UPDATE API
-            SET modified = DATETIME(), enabled = 0
+            SET enabled = 0
             WHERE id = ?
             ''', [
             apiId,

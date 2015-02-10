@@ -10,7 +10,7 @@ All rights reserved.
 """
 
 import logging
-import time
+import time, datetime
 import hmac, hashlib
 import re
 import binascii
@@ -128,7 +128,7 @@ class OTPVerification(object):
 
         except CurruptedOTPError as e:
             ## The OTP has an invalid format
-            logging.getLogger().debug('Currupted OTP: Exception message: ' + str(e))
+            logging.getLogger().debug('Currupted OTP: ' + str(e))
             self.__response['status'] = 'CURRUPTED_OTP'
 
         except KeyError as e:
@@ -314,7 +314,8 @@ class OTPVerification(object):
         ## Get required information from database
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
-            SELECT secretid, counter, sessioncounter, timestamp, aeskey, modified, enabled
+            SELECT secretid, counter, sessioncounter, timestamp, aeskey,
+                   modified, enabled
             FROM ARDUKEY
             WHERE publicid = ?
             ''', [
@@ -345,16 +346,17 @@ class OTPVerification(object):
         ## Extract data from decrypted token
         ## Note: The data in token must be interpreted as little endian:
         ## The string 'aabb' would be become 0xbbaa for example.
-        token = {}
-        token['secretId'] = decryptedToken[0:12]
-        token['counter'] = int(decryptedToken[14:16] + decryptedToken[12:14], 16)
-        token['timestamp'] = int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[16:18], 16)
-        token['sessionCounter'] = int(decryptedToken[22:24], 16)
-        token['random'] = int(decryptedToken[26:28] + decryptedToken[24:26], 16)
-        token['crc'] = int(decryptedToken[30:32] + decryptedToken[28:30], 16)
+        token = {
+            'secretId': decryptedToken[0:12],
+            'counter': int(decryptedToken[14:16] + decryptedToken[12:14], 16),
+            'timestamp': int(decryptedToken[20:22] + decryptedToken[18:20] + decryptedToken[16:18], 16),
+            'sessionCounter': int(decryptedToken[22:24], 16),
+            'random': int(decryptedToken[26:28] + decryptedToken[24:26], 16),
+            'crc': int(decryptedToken[30:32] + decryptedToken[28:30], 16)
+        }
 
         ## Format the extracted token data for debugging
-        explainedTokenDebug = 'Raw token: {0:s} (' + \
+        explainedTokenDebug = 'Raw token: {0} (' + \
             'counter = 0x{1:0>4X}; ' + \
             'timestamp = 0x{2:0>6X}; ' + \
             'session = 0x{3:0>2X}; ' + \
@@ -398,8 +400,8 @@ class OTPVerification(object):
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
-            SET counter = ?, sessioncounter = ?, timestamp = ?, modified = DATETIME()
-            WHERE publicid = ? AND enabled = 1
+            SET counter = ?, sessioncounter = ?, timestamp = ?
+            WHERE publicid = ?
             ''', [
             token['counter'],
             token['sessionCounter'],
@@ -408,7 +410,9 @@ class OTPVerification(object):
         ])
         ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().connection.commit()
 
-        ## TODO: Check if database values has been updated successfully?
+        ## Check if the update command succeeded
+        if ( ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.rowcount != 1 ):
+            raise Exception('The database update of new token values failed!')
 
         ## Additional OTP phishing test:
         ## Check the token timestamp if the ArduKey has NOT been re-plugged
@@ -419,23 +423,23 @@ class OTPVerification(object):
 
             ## Estimate number of seconds that *should* be elapsed
             ## Note: The timestamp of an ArduKey increments 8 times per second.
-            estimatedElapsedSeconds = tokenTimestampDiff * (1/8)
+            estimatedElapsedSeconds = int(tokenTimestampDiff * (1/8))
 
-            ## Get datetime as unix timestamp when the last OTP has been processed
-            lastProcessingTimestamp = old ## TODO
+            ## Get datetime when the last OTP has been processed
+            lastProcessingTime = datetime.datetime.strptime(modified, '%Y-%m-%d %H:%M:%S')
 
-            ## Calculate elapsed seconds from last mo
-            currentTimestamp = now
-            elapsedSecondsSinceLastProcessing = currentTimestamp - lastProcessingTimestamp
+            ## Calculate elapsed seconds since last OTP processing
+            currentTime = datetime.datetime.now()
+            elapsedSecondsSinceLastProcessing = abs((currentTime - lastProcessingTime).seconds)
 
             ## Compare the estimated and calculated number seconds
             secondsDeviation = abs(elapsedSecondsSinceLastProcessing - estimatedElapsedSeconds)
 
             ## Format the phishing test results for debugging
             phishingTestResult = 'OTP phishing test results: ' + \
-                'estimatedElapsedSeconds = {0:s}; ' + \
-                'elapsedSecondsSinceLastProcessing = {1:s}; ' + \
-                'secondsDeviation = {2:s}'
+                'estimatedElapsedSeconds = {0}; ' + \
+                'elapsedSecondsSinceLastProcessing = {1}; ' + \
+                'secondsDeviation = {2}'
 
             phishingTestResult = phishingTestResult.format(
                 estimatedElapsedSeconds,
@@ -461,7 +465,7 @@ class OTPVerification(object):
         """
 
         ## Set current datetime
-        self.__response['time'] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        self.__response['time'] = time.strftime('%Y-%m-%dT%H:%M:%S')
 
         ## Unset old hmac
         ## Note: Do not remove element, cause if no hmac signature is possible,
