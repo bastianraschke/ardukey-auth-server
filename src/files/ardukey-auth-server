@@ -39,9 +39,8 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         """
-        Log an arbitrary message.
+        Log an arbitrary message (@see BaseHTTPRequestHandler).
 
-        @see BaseHTTPRequestHandler
         """
 
         ## Do not output anything
@@ -51,7 +50,9 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         """
         Send a given message to client.
 
-        @param string message The message to send to client.
+        @param string message
+        The message to send to client.
+
         @return void
         """
 

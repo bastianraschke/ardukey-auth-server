@@ -385,73 +385,73 @@ if ( __name__ == '__main__' ):
         description='ArduKey authserver configuration tool ' + VERSION)
 
     parser.add_argument('-v', '--version',
-                        action='version',
-                        version='ArduKey authserver configuration tool ' + VERSION,
-                        help='Print version and exit.'
-                       )
+        action='version',
+        version='ArduKey authserver configuration tool ' + VERSION,
+        help='Print version and exit.'
+    )
 
     ardukeyGroup = parser.add_argument_group('ArduKey management')
     apikeyGroup = parser.add_argument_group('API key management')
 
     ardukeyGroup.add_argument('--list-ardukeys',
-                        action='store_true',
-                        default=False,
-                        required=False,
-                        help='List all available ArduKeys.'
-                       )
+        action='store_true',
+        default=False,
+        required=False,
+        help='List all available ArduKeys.'
+    )
 
     ardukeyGroup.add_argument('--add-ardukey',
-                        action='store',
-                        default=False,
-                        required=False,
-                        nargs=3,
-                        metavar=('PUBLICID', 'SECRETID', 'AESKEY'),
-                        help='Add a new ArduKey.'
-                       )
+        action='store',
+        default=False,
+        required=False,
+        nargs=3,
+        metavar=('PUBLICID', 'SECRETID', 'AESKEY'),
+        help='Add a new ArduKey.'
+    )
 
     ardukeyGroup.add_argument('--revoke-ardukey',
-                        action='store',
-                        default=False,
-                        required=False,
-                        nargs=1,
-                        metavar='PUBLICID',
-                        type=str,
-                        help='Revoke an ArduKey.'
-                       )
+        action='store',
+        default=False,
+        required=False,
+        nargs=1,
+        metavar='PUBLICID',
+        type=str,
+        help='Revoke an ArduKey.'
+    )
 
     ardukeyGroup.add_argument('--delete-ardukey',
-                        action='store',
-                        default=False,
-                        required=False,
-                        nargs=1,
-                        metavar='PUBLICID',
-                        type=str,
-                        help='Delete an ArduKey.'
-                       )
+        action='store',
+        default=False,
+        required=False,
+        nargs=1,
+        metavar='PUBLICID',
+        type=str,
+        help='Delete an ArduKey.'
+    )
 
     apikeyGroup.add_argument('--list-apikeys',
-                        action='store_true',
-                        default=False,
-                        required=False,
-                        help='List all available API keys.'
-                       )
+        action='store_true',
+        default=False,
+        required=False,
+        help='List all available API keys.'
+    )
 
     apikeyGroup.add_argument('--generate-apikey',
-                        action='store_true',
-                        default=False,
-                        required=False,
-                        help='Generate a new API key.'
-                       )
+        action='store_true',
+        default=False,
+        required=False,
+        help='Generate a new API key.'
+    )
 
     apikeyGroup.add_argument('--revoke-apikey',
-                        action='store',
-                        default=False,
-                        required=False,
-                        nargs=1,
-                        metavar='APIID',
-                        type=int,
-                        help='Revoke an API key.'
-                       )
+        action='store',
+        default=False,
+        required=False,
+        nargs=1,
+        metavar='APIID',
+        type=int,
+        help='Revoke an API key.'
+    )
 
     args = vars(parser.parse_args())
 
