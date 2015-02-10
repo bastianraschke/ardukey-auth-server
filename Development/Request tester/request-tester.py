@@ -17,7 +17,7 @@ import socket
 
 def calculateHmac(data, sharedSecret):
     """
-    Calculates a hexadecimal Hmac of given data dictionary.
+    Calculate hmac of given dictionary and return it as a hexadecimal string.
 
     @param dict data
     The dictionary that contains data.
@@ -29,21 +29,21 @@ def calculateHmac(data, sharedSecret):
     if ( type(data) != dict ):
         raise ValueError('The given data is not a dictionary!')
 
-    ## Checks if shared secret is given
+    ## Check if shared secret is given
     if ( len(sharedSecret) == 0 ):
-        raise ValueError('No shared secret given!')
+        raise ValueError('No shared secret given to perform hmac calculation!')
 
-    payloadData = ''
+    dataString = ''
 
-    ## Sort dictionary by key, to calculate the same Hmac always
+    ## Sort dictionary by key, to calculate the same hmac always
     for k in sorted(data):
-        payloadData += str(data[k])
+        dataString += str(data[k])
 
     sharedSecret = sharedSecret.encode('utf-8')
-    payloadData = payloadData.encode('utf-8')
+    dataString = dataString.encode('utf-8')
 
-    ## Calculate HMAC of current response
-    return hmac.new(sharedSecret, msg=payloadData, digestmod=hashlib.sha256).hexdigest()
+    ## Calculate hmac of payload
+    return hmac.new(sharedSecret, msg=dataString, digestmod=hashlib.sha256).hexdigest()
 
 if ( __name__ == '__main__' ):
 

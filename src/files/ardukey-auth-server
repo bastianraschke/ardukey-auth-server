@@ -98,9 +98,9 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
                 self.send_output("<p>Please send your GET requests to: <pre>/ardukeyotp/1.0/verify</pre>")
                 self.send_output('</body></html>')
 
-        ## General unexpected server errors:
+        ## General unexpected server request errors:
         except:
-            logging.getLogger().error('Unexpected server error occured:', exc_info=1)
+            logging.getLogger().error('Unexpected server error occured during request:', exc_info=1)
 
 if ( __name__ == '__main__' ):
 
@@ -144,7 +144,7 @@ if ( __name__ == '__main__' ):
         logger.addHandler(fileHandler)
 
     except:
-        sys.stderr.write('Warning: The logger could not be initialized correctly!\n\n')
+        sys.stderr.write('Error: The logger could not be initialized correctly!\n\n')
         sys.stderr.write(traceback.format_exc())
 
     ## Try to start HTTP server
@@ -162,15 +162,15 @@ if ( __name__ == '__main__' ):
         sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 
-    ## Try to serve and never return back
+    ## Try to start serving and never return back
     try:
         httpServer.serve_forever()
 
     except KeyboardInterrupt:
-        print('KeyboardInterrupt received...')
+        logger.info('KeyboardInterrupt received...')
 
     except:
-        logger.error('Unexpected server error occured:', exc_info=1)
+        logger.error('Unexpected server error occured during serving:', exc_info=1)
 
     finally:
         logger.info('Shutting down ArduKey authserver.')
