@@ -4,7 +4,7 @@
 from distutils.core import setup
 
 setup(
-    name            = 'ArduKey Auth',
+    name            = 'ArduKey authserver',
     version         = '1.1',
     description     = 'ArduKey authentication server written in Python 3.',
     author          = 'Bastian Raschke',
