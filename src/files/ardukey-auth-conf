@@ -118,8 +118,8 @@ def addArduKey(publicId, secretId, aesKey):
 
         SQLiteWrapper.getInstance().cursor.execute(
             '''
-            INSERT INTO ARDUKEY(publicid, secretid, aeskey, modified, created)
-            VALUES(?, ?, ?, DATETIME('now', 'localtime'), DATETIME('now', 'localtime'));
+            INSERT INTO ARDUKEY(publicid, secretid, aeskey)
+            VALUES(?, ?, ?);
             ''', [
             publicId,
             secretId,
@@ -298,8 +298,8 @@ def generateAPIKey():
     try:
         SQLiteWrapper.getInstance().cursor.execute(
             '''
-            INSERT INTO API(secret, modified, created)
-            VALUES(?, DATETIME('now', 'localtime'), DATETIME('now', 'localtime'));
+            INSERT INTO API(secret)
+            VALUES(?);
             ''', [
             sharedSecret,
         ])

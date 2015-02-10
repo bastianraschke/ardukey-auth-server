@@ -5,17 +5,17 @@ CREATE TABLE API
 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     secret TEXT(64) NOT NULL,
-    modified DATE NOT NULL,
-    created DATE NOT NULL,
+    modified DATE,
+    created DATE,
     enabled INTEGER(1) NOT NULL DEFAULT 1
 );
 
-CREATE TRIGGER UPDATE_API BEFORE UPDATE ON API BEGIN
-    UPDATE API SET modified = DATETIME('now', 'localtime')
+CREATE TRIGGER INSERT_API AFTER INSERT ON API BEGIN
+    UPDATE API SET modified = DATETIME('now', 'localtime'), created = DATETIME('now', 'localtime')
     WHERE rowid = new.rowid;
 END;
 
-CREATE TRIGGER INSERT_API AFTER INSERT ON API BEGIN
+CREATE TRIGGER UPDATE_API BEFORE UPDATE ON API BEGIN
     UPDATE API SET modified = DATETIME('now', 'localtime')
     WHERE rowid = new.rowid;
 END;
@@ -28,13 +28,13 @@ CREATE TABLE ARDUKEY
     sessioncounter INTEGER(3) NOT NULL DEFAULT 0,
     timestamp INTEGER(8) DEFAULT 0,
     aeskey TEXT(32) NOT NULL,
-    modified DATE NOT NULL,
-    created DATE NOT NULL,
+    modified DATE,
+    created DATE,
     enabled INTEGER(1) NOT NULL DEFAULT 1
 );
 
 CREATE TRIGGER INSERT_ARDUKEY AFTER INSERT ON ARDUKEY BEGIN
-    UPDATE ARDUKEY SET modified = DATETIME('now', 'localtime')
+    UPDATE ARDUKEY SET modified = DATETIME('now', 'localtime'), created = DATETIME('now', 'localtime')
     WHERE rowid = new.rowid;
 END;
 
