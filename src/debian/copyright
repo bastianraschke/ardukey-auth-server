@@ -1,7 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: ArduKey Auth
 Upstream-Contact: Bastian Raschke <bastian.raschke@posteo.de>
-Source: https://sicherheitskritisch.de
+Source: http://sicherheitskritisch.de
 
 Files: *
 Copyright: Copyright (C) 2015 Bastian Raschke <bastian.raschke@posteo.de>
