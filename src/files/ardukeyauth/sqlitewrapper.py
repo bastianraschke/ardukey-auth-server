@@ -8,19 +8,14 @@ Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>
 All rights reserved.
 """
 
-import sqlite3
 import threading
+import sqlite3
 import os
-
-import ardukeyauth.configreader
 
 
 class SQLiteWrapper(object):
     """
     SQLite database wrapper class.
-
-    @attribute dict<self> __instances
-    Singleton instances.
 
     @attribute sqlite3.Connection connection
     The database connection.
@@ -29,35 +24,16 @@ class SQLiteWrapper(object):
     The database cursor.
     """
 
-    __instances = {}
     connection = None
     cursor = None
 
-    @classmethod
-    def getInstance(self):
-        """
-        Singleton method
-
-        @return Database
-        """
-
-        ## Gets id of current thread
-        currentThreadId = threading.current_thread().ident
-
-        if ( currentThreadId not in self.__instances ):
-            self.__instances[currentThreadId] = self()
-
-        return self.__instances[currentThreadId]
-
-    def __init__(self):
+    def __init__(self, databaseFilePath):
         """
         Constructor
 
+        @attribute string databaseFilePath
+        The path to the database file.
         """
-
-        ## Get database file from config
-        configReader = ardukeyauth.configreader.ConfigReader()
-        databaseFilePath = configReader.get('database_file')
 
         ## Check if path/file is writable
         if ( os.access(databaseFilePath, os.W_OK) == False ):
@@ -75,3 +51,38 @@ class SQLiteWrapper(object):
         ## Close connection (all uncommited changes will be lost)
         if ( self.connection is not None ):
             self.connection.close()
+
+        self.connection = None
+        self.cursor = None
+
+databaseFilePath = ''
+
+def setFilePath(filePath):
+    """
+    Sets the database filepath at module level.
+
+    @return void
+    """
+
+    global databaseFilePath
+    databaseFilePath = filePath
+
+## Object instances on module level
+moduleInstances = {}
+
+def getInstance():
+    """
+    Singleton method to get instance at module level.
+
+    @return SQLiteWrapper
+    """
+
+    global moduleInstances
+
+    ## Gets id of current thread
+    currentThreadId = threading.current_thread().ident
+
+    if ( currentThreadId not in moduleInstances ):
+        moduleInstances[currentThreadId] = SQLiteWrapper(databaseFilePath)
+
+    return moduleInstances[currentThreadId]

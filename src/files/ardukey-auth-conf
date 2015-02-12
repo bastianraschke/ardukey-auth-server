@@ -15,8 +15,10 @@ import re
 import string, random
 import argparse
 
+import ardukeyauth.configuration as configuration
+import ardukeyauth.sqlitewrapper as sqlitewrapper
+
 from ardukeyauth import __version__ as VERSION
-from ardukeyauth.sqlitewrapper import SQLiteWrapper
 
 
 def listArduKeys():
@@ -27,7 +29,7 @@ def listArduKeys():
     """
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT publicid, secretid, counter, sessioncounter, timestamp, aeskey,
                    modified, created, enabled
@@ -36,7 +38,7 @@ def listArduKeys():
             ''', [
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) == 0 ):
             print('No available ArduKeys found!\n')
@@ -100,7 +102,7 @@ def addArduKey(publicId, secretId, aesKey):
         return False
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT publicid
             FROM ARDUKEY
@@ -109,13 +111,13 @@ def addArduKey(publicId, secretId, aesKey):
             publicId,
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) > 0 ):
             sys.stderr.write('Error: The ArduKey "' + publicId + '" already exists!\n')
             return False
 
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             INSERT INTO ARDUKEY(publicid, secretid, aeskey)
             VALUES(?, ?, ?);
@@ -124,7 +126,7 @@ def addArduKey(publicId, secretId, aesKey):
             secretId,
             aesKey,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
     except:
         sys.stderr.write('Error: The ArduKey could not be created!\n')
@@ -153,7 +155,7 @@ def revokeArduKey(publicId):
         return False
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT enabled
             FROM ARDUKEY
@@ -162,7 +164,7 @@ def revokeArduKey(publicId):
             publicId,
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) == 0 ):
             sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
@@ -174,7 +176,7 @@ def revokeArduKey(publicId):
             sys.stderr.write('Error: The ArduKey "' + publicId + '" is still revoked!\n')
             return False
 
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
             SET enabled = 0
@@ -182,7 +184,7 @@ def revokeArduKey(publicId):
             ''', [
             publicId,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
     except:
         sys.stderr.write('Error: The ArduKey could not be revoked!\n')
@@ -211,7 +213,7 @@ def deleteArduKey(publicId):
         return False
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT publicid
             FROM ARDUKEY
@@ -220,20 +222,20 @@ def deleteArduKey(publicId):
             publicId,
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) == 0 ):
             sys.stderr.write('Error: The ArduKey "' + publicId + '" does not exists!\n')
             return False
 
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             DELETE FROM ARDUKEY
             WHERE publicid = ?
             ''', [
             publicId,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
     except:
         sys.stderr.write('Error: The ArduKey could not be deleted!\n')
@@ -252,7 +254,7 @@ def listAPIKeys():
     """
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT id, secret, modified, created, enabled
             FROM API
@@ -260,7 +262,7 @@ def listAPIKeys():
             ''', [
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) == 0 ):
             print('No available API keys found!\n')
@@ -295,16 +297,16 @@ def generateAPIKey():
         string.ascii_uppercase + string.digits) for _ in range(64))
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             INSERT INTO API(secret)
             VALUES(?);
             ''', [
             sharedSecret,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
-        lastRowId = SQLiteWrapper.getInstance().cursor.lastrowid
+        lastRowId = sqlitewrapper.getInstance().cursor.lastrowid
 
     except:
         sys.stderr.write('Error: The API key could not be generated!\n')
@@ -332,7 +334,7 @@ def revokeAPIKey(apiId):
         return False
 
     try:
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT enabled
             FROM API
@@ -341,7 +343,7 @@ def revokeAPIKey(apiId):
             apiId,
         ])
 
-        rows = SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) == 0 ):
             sys.stderr.write('Error: The API key "' + str(apiId) + '" does not exists!\n')
@@ -353,7 +355,7 @@ def revokeAPIKey(apiId):
             sys.stderr.write('Error: The API key "' + str(apiId) + '" is still revoked!\n')
             return False
 
-        SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             UPDATE API
             SET enabled = 0
@@ -361,7 +363,7 @@ def revokeAPIKey(apiId):
             ''', [
             apiId,
         ])
-        SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
     except:
         sys.stderr.write('Error: The API key could not be revoked!\n')
@@ -379,6 +381,24 @@ if ( __name__ == '__main__' ):
     if ( os.geteuid() != 0 ):
         sys.stderr.write('Error: You need to have root privileges!\n')
         sys.exit(1)
+
+    ## Try to parse configuration file
+    try:
+        configuration.setFilePath('/etc/ardukey-auth-server.conf')
+        configurationInstance = configuration.getInstance()
+
+        databaseFilePath = configurationInstance.get('database_file')
+        logFilePath = configurationInstance.get('log_file')
+        serverAddress = configurationInstance.get('server_address')
+        serverPort = configurationInstance.get('server_port')
+
+    except:
+        sys.stderr.write('Fatal error: The configuration file could not be read correctly:\n\n')
+        sys.stderr.write(traceback.format_exc())
+        sys.exit(1)
+
+    ## Set database file path
+    sqlitewrapper.setFilePath(databaseFilePath)
 
     parser = argparse.ArgumentParser(add_help=True,
         description='ArduKey authserver configuration tool ' + VERSION)

@@ -15,8 +15,10 @@ import logging
 import sys
 import traceback
 
+import ardukeyauth.configuration as configuration
+import ardukeyauth.sqlitewrapper as sqlitewrapper
+
 from ardukeyauth import __version__ as VERSION
-from ardukeyauth.configreader import ConfigReader
 from ardukeyauth.otpverificationrequest import OTPVerificationRequest
 from ardukeyauth.otpverification import OTPVerification
 
@@ -106,28 +108,31 @@ if ( __name__ == '__main__' ):
 
     ## Try to parse configuration file
     try:
-        configReader = ConfigReader()
+        configuration.setFilePath('/etc/ardukey-auth-server.conf')
+        configurationInstance = configuration.getInstance()
 
-        logFilePath = configReader.get('log_file')
-        serverAddress = configReader.get('server_address')
-        serverPort = configReader.get('server_port')
+        databaseFilePath = configurationInstance.get('database_file')
+        logFilePath = configurationInstance.get('log_file')
+        serverAddress = configurationInstance.get('server_address')
+        serverPort = configurationInstance.get('server_port')
 
     except:
         sys.stderr.write('Fatal error: The configuration file could not be read correctly:\n\n')
         sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 
+    ## Set database file path
+    sqlitewrapper.setFilePath(databaseFilePath)
+
     ## Try to initialize logger
     try:
-        logger = logging.getLogger()
-
         ## Enable debug logging if "--debug" flag is given
         if ( '--debug' in sys.argv ):
             loggingLevel = logging.DEBUG
         else:
             loggingLevel = logging.INFO
 
-        logger.setLevel(loggingLevel)
+        logging.getLogger().setLevel(loggingLevel)
 
         logFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -135,13 +140,13 @@ if ( __name__ == '__main__' ):
         strmHandler = logging.StreamHandler()
         strmHandler.setLevel(loggingLevel)
         strmHandler.setFormatter(logFormatter)
-        logger.addHandler(strmHandler)
+        logging.getLogger().addHandler(strmHandler)
 
         ## Logging file handler
         fileHandler = logging.FileHandler(logFilePath)
         fileHandler.setLevel(loggingLevel)
         fileHandler.setFormatter(logFormatter)
-        logger.addHandler(fileHandler)
+        logging.getLogger().addHandler(fileHandler)
 
     except:
         sys.stderr.write('Error: The logger could not be initialized correctly!\n\n')
@@ -154,7 +159,7 @@ if ( __name__ == '__main__' ):
             ArduKeyAuthserver
         )
 
-        logger.info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
+        logging.getLogger().info('Starting ' + ArduKeyAuthserver.server_version + ': ' +
             'Listening on ' + serverAddress + ':' + serverPort)
 
     except:
@@ -167,11 +172,11 @@ if ( __name__ == '__main__' ):
         httpServer.serve_forever()
 
     except KeyboardInterrupt:
-        logger.info('KeyboardInterrupt received...')
+        logging.getLogger().info('KeyboardInterrupt received...')
 
     except:
-        logger.error('Unexpected server error occured during serving:', exc_info=1)
+        logging.getLogger().error('Unexpected server error occured during serving:', exc_info=1)
 
     finally:
-        logger.info('Shutting down ArduKey authserver.')
+        logging.getLogger().info('Shutting down ArduKey authserver.')
         httpServer.socket.close()

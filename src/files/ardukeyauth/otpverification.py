@@ -15,7 +15,7 @@ import re
 import binascii
 import Crypto.Cipher.AES as AES
 
-import ardukeyauth.sqlitewrapper
+import ardukeyauth.sqlitewrapper as sqlitewrapper
 
 
 class NoAPIKeyAvailableError(Exception):
@@ -73,7 +73,7 @@ class OTPVerification(object):
             self.__response['nonce'] = requestParameters['nonce']
 
             ## Get shared secret of given API key
-            ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
+            sqlitewrapper.getInstance().cursor.execute(
                 '''
                 SELECT secret, enabled
                 FROM API
@@ -82,7 +82,7 @@ class OTPVerification(object):
                 requestParameters['apiId'],
             ])
 
-            rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
+            rows = sqlitewrapper.getInstance().cursor.fetchall()
 
             if ( len(rows) > 0 ):
                 sharedSecret = rows[0][0]
@@ -311,7 +311,7 @@ class OTPVerification(object):
         encryptedToken = self.__decodeArduHex(encryptedToken)
 
         ## Get required information from database
-        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             SELECT secretid, counter, sessioncounter, timestamp, aeskey,
                    modified, enabled
@@ -321,7 +321,7 @@ class OTPVerification(object):
             publicId,
         ])
 
-        rows = ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.fetchall()
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
 
         if ( len(rows) > 0 ):
             secretId = rows[0][0].lower()
@@ -396,7 +396,7 @@ class OTPVerification(object):
                 return False
 
         ## Update the current values from OTP to database
-        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.execute(
+        sqlitewrapper.getInstance().cursor.execute(
             '''
             UPDATE ARDUKEY
             SET counter = ?, sessioncounter = ?, timestamp = ?
@@ -407,10 +407,10 @@ class OTPVerification(object):
             token['timestamp'],
             publicId,
         ])
-        ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().connection.commit()
+        sqlitewrapper.getInstance().connection.commit()
 
         ## Check if the update command succeeded
-        if ( ardukeyauth.sqlitewrapper.SQLiteWrapper.getInstance().cursor.rowcount != 1 ):
+        if ( sqlitewrapper.getInstance().cursor.rowcount != 1 ):
             raise Exception('The database update of new token values failed!')
 
         ## Additional OTP phishing test:
