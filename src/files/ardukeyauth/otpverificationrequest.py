@@ -26,7 +26,7 @@ class OTPVerificationRequest(object):
         """
         Constructor
 
-        @param string queryString
+        @param str queryString
         The query string of the request.
         """
 

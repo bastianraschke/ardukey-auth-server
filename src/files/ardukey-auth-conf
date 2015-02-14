@@ -25,7 +25,7 @@ def listArduKeys():
     """
     List all available ArduKeys.
 
-    @return boolean
+    @return bool
     """
 
     try:
@@ -68,16 +68,16 @@ def addArduKey(publicId, secretId, aesKey):
     """
     Add a new ArduKey.
 
-    @param string publicId
+    @param str publicId
     The public id of ArduKey.
 
-    @param string secretId
+    @param str secretId
     The secret id of ArduKey.
 
-    @param string aesKey
+    @param str aesKey
     The AES key as hexadecimal string.
 
-    @return boolean
+    @return bool
     """
 
     publicId = publicId.lower()
@@ -141,10 +141,10 @@ def revokeArduKey(publicId):
     """
     Revoke an ArduKey.
 
-    @param string publicId
+    @param str publicId
     The public id of ArduKey.
 
-    @return boolean
+    @return bool
     """
 
     publicId = publicId.lower()
@@ -199,10 +199,10 @@ def deleteArduKey(publicId):
     """
     Delete an ArduKey.
 
-    @param string publicId
+    @param str publicId
     The public id of ArduKey.
 
-    @return boolean
+    @return bool
     """
 
     publicId = publicId.lower()
@@ -250,7 +250,7 @@ def listAPIKeys():
     """
     List all available API keys.
 
-    @return boolean
+    @return bool
     """
 
     try:
@@ -289,7 +289,7 @@ def generateAPIKey():
     """
     Generate a new API key.
 
-    @return boolean
+    @return bool
     """
 
     ## See https://stackoverflow.com/questions/2257441/
@@ -323,10 +323,10 @@ def revokeAPIKey(apiId):
     """
     Revoke an API key.
 
-    @param string apiId
+    @param str apiId
     The id of the API key.
 
-    @return boolean
+    @return bool
     """
 
     if ( type(apiId) != int ):
@@ -384,8 +384,8 @@ if ( __name__ == '__main__' ):
 
     ## Try to parse configuration file
     try:
-        configuration.setFilePath('/etc/ardukey-auth-server.conf')
         configurationInstance = configuration.getInstance()
+        configurationInstance.setFilePath('/etc/ardukey-auth-server.conf')
 
         databaseFilePath = configurationInstance.get('database_file')
         logFilePath = configurationInstance.get('log_file')
@@ -398,7 +398,7 @@ if ( __name__ == '__main__' ):
         sys.exit(1)
 
     ## Set database file path
-    sqlitewrapper.setFilePath(databaseFilePath)
+    sqlitewrapper.getInstance().setFilePath(databaseFilePath)
 
     parser = argparse.ArgumentParser(add_help=True,
         description='ArduKey authserver configuration tool ' + VERSION)

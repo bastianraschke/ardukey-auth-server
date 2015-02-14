@@ -4,7 +4,8 @@
 """
 ArduKey authserver
 
-Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>
+Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>,
+               Philipp Meisberger <team@pm-codeworks.de>
 All rights reserved.
 """
 
@@ -17,22 +18,32 @@ class Configuration(object):
     """
     Configuration file reader.
 
-    @attribute string __configurationFilePath
+    @attribute str __configurationFilePath
     The path to the configuration file.
 
-    @attribute configParser __configParser
+    @attribute ConfigParser __configParser
     The ConfigParser object.
     """
 
     __configurationFilePath = ''
     __configParser = None
 
-    def __init__(self, configurationFilePath):
+    def __init__(self):
         """
         Constructor
 
-        @attribute string configurationFilePath
+        """
+
+        pass
+
+    def setFilePath(self, configurationFilePath):
+        """
+        Set path to the configuration file.
+
+        @attribute str configurationFilePath
         The path to the configuration file.
+
+        @return void
         """
 
         ## Check if path/file is readable
@@ -44,43 +55,128 @@ class Configuration(object):
         self.__configParser = configparser.ConfigParser()
         self.__configParser.read(self.__configurationFilePath)
 
-    def __del__(self):
+    def saveFile(self):
         """
-        Destructor
+        Writes modifications to configuration file.
 
+        @return bool
         """
 
-        pass
+        ## Check if path/file is writable
+        if ( os.access(self.__configurationFilePath, os.W_OK) == True ):
 
-    def get(self, key, default = None):
+            fileHandle = open(self.__configurationFilePath, 'w')
+            self.__configParser.write(fileHandle)
+            fileHandle.close()
+
+            return True
+
+        return False
+
+    def exists(self, key, section = 'Configuration'):
         """
-        Get a option by key.
+        Check if an option exists.
 
-        @param string key
+        @param str key
+        The option key.
+
+        @param str section
+        The section of the key.
+
+        @return bool
+        """
+
+        return self.__configParser.has_option(section, key)
+
+    def get(self, key, section = 'Configuration', default = None):
+        """
+        Get an option by key.
+
+        @param str key
         The option key.
 
         @param object default
         If no option is found, return default value instead.
 
+        @param str section
+        The section of the key.
+
         @return object
         """
 
-        return self.__configParser.get('DEFAULT', key, fallback=default)
+        return self.__configParser.get(section, key, fallback=default)
 
-configurationFilePath = None
+    def getList(self, key, section = 'Configuration', default = None):
+        """
+        Get an list option by key.
 
-def setFilePath(filePath):
-    """
-    Sets the configuration filepath at module level.
+        @param str key
+        The option key.
 
-    @return void
-    """
+        @param object default
+        If no option is found, return default value instead.
 
-    global configurationFilePath
-    configurationFilePath = filePath
+        @param str section
+        The section of the key.
 
-## Object instances on module level
-moduleInstances = {}
+        @return list
+        """
+
+        packedList = self.get(key, section, default)
+
+        if ( packedList is not None ):
+            unpackedList = packedList.split(',')
+
+        return unpackedList
+
+    def set(self, key, value, section = 'Configuration'):
+        """
+        Set an option by key.
+
+        @param str key
+        The option key.
+
+        @param object value
+        The option value.
+
+        @param str section
+        The section of the key.
+
+        @return void
+        """
+
+        ## Create section if not exist
+        if ( self.__configParser.has_section(section) == False ):
+            self.__configParser.add_section(section)
+
+        return self.__configParser.set(section, key, value)
+
+    def setList(self, key, value, section = 'Configuration'):
+        """
+        Set an list option by key.
+
+        @param str key
+        The option key.
+
+        @param list value
+        The option value.
+
+        @param str section
+        The section of the key.
+
+        @return void
+        """
+
+        if ( type(value) != list ):
+            raise ValueError('The given value is not a list!')
+
+        self.set(key, ','.join(value), section)
+
+## Lock object to provide mutal exclusion
+mutexLock = threading.Lock()
+
+## Object instance on module level
+moduleInstance = None
 
 def getInstance():
     """
@@ -89,12 +185,17 @@ def getInstance():
     @return Configuration
     """
 
-    global moduleInstances
+    try:
+        mutexLock.acquire()
 
-    ## Gets id of current thread
-    currentThreadId = threading.current_thread().ident
+        global moduleInstance
 
-    if ( currentThreadId not in moduleInstances ):
-        moduleInstances[currentThreadId] = Configuration(configurationFilePath)
+        if ( moduleInstance is None ):
+            moduleInstance = Configuration()
 
-    return moduleInstances[currentThreadId]
+        returnValue = moduleInstance
+
+    finally:
+        mutexLock.release()
+
+    return returnValue

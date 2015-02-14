@@ -17,6 +17,9 @@ class SQLiteWrapper(object):
     """
     SQLite database wrapper class.
 
+    @attribute str __databaseFilePath
+    The path to the database file.
+
     @attribute sqlite3.Connection connection
     The database connection.
 
@@ -24,20 +27,33 @@ class SQLiteWrapper(object):
     The database cursor.
     """
 
+    __databaseFilePath = ''
     connection = None
     cursor = None
 
-    def __init__(self, databaseFilePath):
+    def __init__(self):
         """
         Constructor
 
-        @attribute string databaseFilePath
+        """
+
+        pass
+
+    def setFilePath(self, databaseFilePath):
+        """
+        Set path to the database file.
+
+        @attribute str databaseFilePath
         The path to the database file.
+
+        @return void
         """
 
         ## Check if path/file is writable
         if ( os.access(databaseFilePath, os.W_OK) == False ):
             raise ValueError('The database file "' + databaseFilePath + '" is not writable!')
+
+        self.__databaseFilePath = databaseFilePath
 
         self.connection = sqlite3.connect(databaseFilePath)
         self.cursor = self.connection.cursor()
@@ -55,17 +71,8 @@ class SQLiteWrapper(object):
         self.connection = None
         self.cursor = None
 
-databaseFilePath = ''
-
-def setFilePath(filePath):
-    """
-    Sets the database filepath at module level.
-
-    @return void
-    """
-
-    global databaseFilePath
-    databaseFilePath = filePath
+## Lock object to provide mutal exclusion
+mutexLock = threading.Lock()
 
 ## Object instances on module level
 moduleInstances = {}
@@ -77,12 +84,20 @@ def getInstance():
     @return SQLiteWrapper
     """
 
-    global moduleInstances
+    try:
+        mutexLock.acquire()
 
-    ## Gets id of current thread
-    currentThreadId = threading.current_thread().ident
+        global moduleInstances
 
-    if ( currentThreadId not in moduleInstances ):
-        moduleInstances[currentThreadId] = SQLiteWrapper(databaseFilePath)
+        ## Get id of current thread
+        currentThreadId = threading.current_thread().ident
 
-    return moduleInstances[currentThreadId]
+        if ( currentThreadId not in moduleInstances ):
+            moduleInstances[currentThreadId] = SQLiteWrapper()
+
+        returnValue = moduleInstances[currentThreadId]
+
+    finally:
+        mutexLock.release()
+
+    return returnValue

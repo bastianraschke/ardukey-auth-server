@@ -14,6 +14,7 @@ import json
 import logging
 import sys
 import traceback
+import argparse
 
 import ardukeyauth.configuration as configuration
 import ardukeyauth.sqlitewrapper as sqlitewrapper
@@ -27,10 +28,10 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     """
     Implementation of BaseHTTPRequestHandler.
 
-    @attribute string server_version
+    @attribute str server_version
     The server version string.
 
-    @attribute string sys_version
+    @attribute str sys_version
     The Python version string.
     """
 
@@ -52,7 +53,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
         """
         Send a given message to client.
 
-        @param string message
+        @param str message
         The message to send to client.
 
         @return void
@@ -106,10 +107,37 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
 
 if ( __name__ == '__main__' ):
 
+    parser = argparse.ArgumentParser(add_help=False)
+
+    parser.add_argument('--debug',
+        action='store_true',
+        default=False,
+        required=False,
+        help='Enables dubugging mode.'
+    )
+
+    parser.add_argument('--config',
+        action='store',
+        default=False,
+        required=False,
+        nargs=1,
+        metavar='PATH',
+        type=str,
+        help='Custom path to configuration file.'
+    )
+
+    args = vars(parser.parse_args())
+
     ## Try to parse configuration file
     try:
-        configuration.setFilePath('/etc/ardukey-auth-server.conf')
+        ## Check if custom configuration file path is given
+        if ( type(args['config']) == list ):
+            configurationFilePath = args['config'][0]
+        else:
+            configurationFilePath = '/etc/ardukey-auth-server.conf'
+
         configurationInstance = configuration.getInstance()
+        configurationInstance.setFilePath(configurationFilePath)
 
         databaseFilePath = configurationInstance.get('database_file')
         logFilePath = configurationInstance.get('log_file')
@@ -122,12 +150,12 @@ if ( __name__ == '__main__' ):
         sys.exit(1)
 
     ## Set database file path
-    sqlitewrapper.setFilePath(databaseFilePath)
+    sqlitewrapper.getInstance().setFilePath(databaseFilePath)
 
     ## Try to initialize logger
     try:
         ## Enable debug logging if "--debug" flag is given
-        if ( '--debug' in sys.argv ):
+        if ( args['debug'] == True ):
             loggingLevel = logging.DEBUG
         else:
             loggingLevel = logging.INFO

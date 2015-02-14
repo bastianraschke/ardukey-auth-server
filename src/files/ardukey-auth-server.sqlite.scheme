@@ -1,6 +1,3 @@
-## SQLite does not have high specialized datatypes, only the basic types.
-## Additionally see: https://www.sqlite.org/datatype3.html
-
 CREATE TABLE API
 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,5 +37,18 @@ END;
 
 CREATE TRIGGER UPDATE_ARDUKEY BEFORE UPDATE ON ARDUKEY BEGIN
     UPDATE ARDUKEY SET modified = DATETIME('now', 'localtime')
+    WHERE rowid = new.rowid;
+END;
+
+CREATE TABLE QUEUED
+(
+    otp TEXT(44),
+    nonce TEXT(32) NOT NULL,
+    created DATE,
+    PRIMARY KEY (otp, nonce)
+);
+
+CREATE TRIGGER INSERT_QUEUED AFTER INSERT ON QUEUED BEGIN
+    UPDATE QUEUED SET created = DATETIME('now', 'localtime')
     WHERE rowid = new.rowid;
 END;

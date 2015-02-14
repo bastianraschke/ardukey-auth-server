@@ -10,9 +10,8 @@ All rights reserved.
 
 import hmac, hashlib
 import http.client
-import random
-import string
 import socket
+import random, string
 
 
 def calculateHmac(data, sharedSecret):
@@ -22,7 +21,7 @@ def calculateHmac(data, sharedSecret):
     @param dict data
     The dictionary that contains data.
 
-    @return string
+    @return str
     """
 
     ## Only process dictionaries
@@ -73,7 +72,12 @@ if ( __name__ == '__main__' ):
             request['hmac'] = calculateHmac(request, sharedSecret)
 
             ## Send request to server
-            connection.request('GET', '/ardukeyotp/1.0/verify?otp=' + request['otp'] + '&nonce=' + request['nonce'] + '&apiId=' + str(request['apiId']) + '&hmac=' + request['hmac'])
+            connection.request('GET', '/ardukeyotp/1.0/verify?' + \
+                'otp=' + request['otp'] + \
+                '&nonce=' + request['nonce'] + \
+                '&apiId=' + str(request['apiId']) + \
+                '&hmac=' + request['hmac']
+            )
 
             ## Receive the response from auth server
             httpResponseData = connection.getresponse().read().decode()

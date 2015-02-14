@@ -46,7 +46,7 @@ class OTPVerification(object):
     """
     ArduKey OTP verification class.
 
-    @attribute string __sharedSecret
+    @attribute str __sharedSecret
     The shared secret of API key.
 
     @attribute dict __response
@@ -147,7 +147,7 @@ class OTPVerification(object):
         @param dict data
         The dictionary that contains data.
 
-        @return string
+        @return str
         """
 
         ## Only process dictionaries
@@ -174,10 +174,10 @@ class OTPVerification(object):
         """
         Convert a given arduhex string to hexadecimal string.
 
-        @param string arduhexString
+        @param str arduhexString
         The arduhex string to convert.
 
-        @return string
+        @return str
         """
 
         ## Character mapping table
@@ -217,13 +217,13 @@ class OTPVerification(object):
         """
         Decrypt given cipher text (AES-ECB) and return plain text as hexadecimal string.
 
-        @param string aesKey
+        @param str aesKey
         The used AES key as hexadecimal string.
 
-        @param string cipherText
+        @param str cipherText
         The cipher text as hexadecimal string.
 
-        @return string
+        @return str
         """
 
         if ( len(aesKey) != 32 ):
@@ -242,12 +242,12 @@ class OTPVerification(object):
 
     def __calculateCRC16(self, hexString):
         """
-        Calculate the CRC16 (ISO 13239) checksum of given hexadecimal data.
+        Calculate the CRC16 (ISO-13239) checksum of given hexadecimal data.
 
-        @param string hexString
+        @param str hexString
         The hexadecimal data used by calculation.
 
-        @return integer
+        @return int
         """
 
         hexStringLength = len(hexString)
@@ -280,10 +280,10 @@ class OTPVerification(object):
         """
         Validate a OTP.
 
-        @param string otp
+        @param str otp
         The OTP to validate.
 
-        @return boolean
+        @return bool
         """
 
         otpLength = len(otp)
@@ -460,7 +460,7 @@ class OTPVerification(object):
         """
         Return the complete response.
 
-        @return dictionary
+        @return dict
         """
 
         ## Set current datetime

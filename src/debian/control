@@ -5,6 +5,7 @@ Priority: optional
 Standards-Version: 3.9.6
 Build-Depends: debhelper (>= 9),
                bash-completion,
+               sqlite3,
                python3 (>= 3.2),
                python3-setuptools
 X-Python3-Version: >= 3.2
