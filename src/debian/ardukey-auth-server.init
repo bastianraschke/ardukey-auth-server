@@ -57,9 +57,9 @@ do_start()
     # --make-pidfile: Create PID file (the daemon does not)
     # --background: Fork own daemon process
     start-stop-daemon --start --quiet --pidfile "${PIDFILE}" \
-        --exec "${DAEMON}" \
         --chuid "${RUNASUSER}" \
         --make-pidfile --background \
+        --exec "${DAEMON}" \
         -- "${DAEMON_ARGS}" \
     || return 2
 }

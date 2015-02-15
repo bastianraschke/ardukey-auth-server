@@ -339,6 +339,8 @@ class OTPVerification(object):
             logging.getLogger().info('The ArduKey "' + publicId + '" has been revoked!')
             return False
 
+        ## TODO: Check if OTP and nonce already seen together?
+
         ## Decrypt encrypted token
         decryptedToken = self.__decryptAES(aesKey, encryptedToken)
 
@@ -379,8 +381,6 @@ class OTPVerification(object):
         ## Check if database secret id matches to value in OTP
         if ( token['secretId'] != secretId ):
             raise CurruptedOTPError('The secret id is not the same as in database!')
-
-        ## TODO: Check if OTP and nonce already seen together?
 
         ## General counter and session counter check
         if ( token['counter'] <= seenCounter ):

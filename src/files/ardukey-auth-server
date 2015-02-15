@@ -126,7 +126,8 @@ if ( __name__ == '__main__' ):
         help='Custom path to configuration file.'
     )
 
-    args = vars(parser.parse_args())
+    args, unknownArgs = parser.parse_known_args()
+    args = vars(args)
 
     ## Try to parse configuration file
     try:
