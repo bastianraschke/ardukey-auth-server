@@ -69,9 +69,6 @@ class OTPVerification(object):
     The response dictionary (the result of verification request).
     """
 
-    __sharedSecret = ''
-    __response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
-
     def __init__(self, request):
         """
         Constructor
@@ -79,6 +76,9 @@ class OTPVerification(object):
         @param OTPVerificationRequest request
         The abstract request to process.
         """
+
+        self.__sharedSecret = ''
+        self.__response = {'otp': '', 'nonce': '', 'time': '', 'status': '', 'hmac': ''}
 
         try:
             ## Get sanitized parameters from abstract request class
@@ -530,8 +530,7 @@ class OTPVerification(object):
         self.__response['time'] = time.strftime('%Y-%m-%dT%H:%M:%S')
 
         ## Unset old hmac
-        ## Note: Do not remove element, cause if no hmac signature is possible,
-        ## the element must be available in response nevertheless!
+        ## Important: Do NOT remove element!
         self.__response['hmac'] = ''
 
         ## Only perform hmac operation if shared secret is available

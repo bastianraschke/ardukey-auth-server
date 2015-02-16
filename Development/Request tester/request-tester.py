@@ -60,7 +60,7 @@ if ( __name__ == '__main__' ):
 
             ## Generate random nonce
             nonce = ''.join(random.SystemRandom().choice(
-                string.ascii_uppercase + string.digits) for _ in range(32))
+                string.ascii_lowercase + string.digits) for _ in range(32))
 
             request = {
                 'otp': typedOTP,

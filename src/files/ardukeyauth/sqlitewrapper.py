@@ -27,17 +27,15 @@ class SQLiteWrapper(object):
     The database cursor.
     """
 
-    __databaseFilePath = ''
-    connection = None
-    cursor = None
-
     def __init__(self):
         """
         Constructor
 
         """
 
-        pass
+        self.__databaseFilePath = ''
+        self.connection = None
+        self.cursor = None
 
     def setFilePath(self, databaseFilePath):
         """

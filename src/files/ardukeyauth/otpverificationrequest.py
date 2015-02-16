@@ -17,10 +17,10 @@ class OTPVerificationRequest(object):
 
     @attribute dict __parameters
     The request parameters.
-    """
 
-    __parameters = {}
-    __hmac = ''
+    @attribute str __hmac
+    The request hmac.
+    """
 
     def __init__(self, queryString):
         """
@@ -29,6 +29,9 @@ class OTPVerificationRequest(object):
         @param str queryString
         The query string of the request.
         """
+
+        self.__parameters = {}
+        self.__hmac = ''
 
         ## Parse all query arguments to dictionary
         parameters = urllib.parse.parse_qs(queryString, keep_blank_values=True)
