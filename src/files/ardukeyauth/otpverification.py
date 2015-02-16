@@ -34,6 +34,22 @@ class BadHmacSignatureError(Exception):
 
     pass
 
+class ReplayedRequestError(Exception):
+    """
+    Dummy exception class for request replay attack.
+
+    """
+
+    pass
+
+class InvalidNonceError(ValueError):
+    """
+    Dummy exception class for invalid request nonce.
+
+    """
+
+    pass
+
 class CurruptedOTPError(ValueError):
     """
     Dummy exception class for currupted OTP format.
@@ -109,7 +125,7 @@ class OTPVerification(object):
                 raise BadHmacSignatureError(message)
 
             ## Try to verify the given OTP
-            if ( self.__verifyOTP(requestParameters['otp']) == True ):
+            if ( self.__verifyOTP(requestParameters['otp'], requestParameters['nonce']) == True ):
                 self.__response['status'] = 'OK'
 
             else:
@@ -125,10 +141,20 @@ class OTPVerification(object):
             logging.getLogger().debug(e)
             self.__response['status'] = 'INVALID_SIGNATURE'
 
+        except ReplayedRequestError as e:
+            ## The request has been replayed
+            logging.getLogger().debug(e)
+            self.__response['status'] = 'REPLAYED_REQUEST'
+
         except CurruptedOTPError as e:
             ## The OTP has an invalid format
             logging.getLogger().debug('Currupted OTP: ' + str(e))
             self.__response['status'] = 'CURRUPTED_OTP'
+
+        except InvalidNonceError as e:
+            ## The request nonce has an invalid format
+            logging.getLogger().debug('Invalid nonce: ' + str(e))
+            self.__response['status'] = 'INVALID_NONCE'
 
         except KeyError as e:
             ## Some request parameters are not okay
@@ -276,12 +302,15 @@ class OTPVerification(object):
 
         return crc
 
-    def __verifyOTP(self, otp):
+    def __verifyOTP(self, otp, nonce):
         """
         Validate a OTP.
 
         @param str otp
         The OTP to validate.
+
+        @param str nonce
+        The nonce of request.
 
         @return bool
         """
@@ -306,6 +335,42 @@ class OTPVerification(object):
 
         except:
             raise CurruptedOTPError('The OTP does not contain public id or token!')
+
+        nonceLength = len(nonce)
+
+        ## Pre-Regex length check
+        if ( nonceLength != 32 ):
+            raise InvalidNonceError('The nonce has an invalid length!')
+
+        otpNonce = (otp + nonce).encode('utf-8')
+        otpNonceHash = hashlib.sha256(otpNonce).hexdigest()
+
+        ## Check if OTP and nonce already seen together
+        sqlitewrapper.getInstance().cursor.execute(
+            '''
+            SELECT hash
+            FROM QUEUED
+            WHERE hash = ?
+            ''', [
+            otpNonceHash
+        ])
+
+        rows = sqlitewrapper.getInstance().cursor.fetchall()
+
+        if ( len(rows) > 0 ):
+            message = 'The OTP "' + otp + '" and nonce "' + nonce + '" have been already seen together!'
+            raise ReplayedRequestError(message)
+
+        else:
+            ## Insert OTP nonce pair
+            sqlitewrapper.getInstance().cursor.execute(
+                '''
+                INSERT INTO QUEUED(hash)
+                VALUES(?);
+                ''', [
+                otpNonceHash,
+            ])
+            sqlitewrapper.getInstance().connection.commit()
 
         ## Convert encrypted token to default hexadecimal string representation
         encryptedToken = self.__decodeArduHex(encryptedToken)
@@ -338,8 +403,6 @@ class OTPVerification(object):
         if ( enabled == 0 ):
             logging.getLogger().info('The ArduKey "' + publicId + '" has been revoked!')
             return False
-
-        ## TODO: Check if OTP and nonce already seen together?
 
         ## Decrypt encrypted token
         decryptedToken = self.__decryptAES(aesKey, encryptedToken)

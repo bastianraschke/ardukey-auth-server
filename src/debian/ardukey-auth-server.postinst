@@ -25,12 +25,12 @@ if [ "${1}" = "configure" ]; then
     chown "${USERNAME}:adm" "${LOG_FILE}"
     chmod 640 "${LOG_FILE}"
 
+    DATABASE_PATH="/var/lib/ardukey-auth-server/"
     DATABASE_FILE="/var/lib/ardukey-auth-server/ardukey-auth-server.sqlite"
 
-    ## Correct permissions of database file
-    chown "${USERNAME}:${USERNAME}" "${DATABASE_FILE}"
+    ## Correct permissions of database path
+    chown -R "${USERNAME}:${USERNAME}" "${DATABASE_PATH}"
     chmod 600 "${DATABASE_FILE}"
-
 
 fi
 

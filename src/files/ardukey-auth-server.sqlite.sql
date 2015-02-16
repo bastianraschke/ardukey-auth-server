@@ -42,10 +42,8 @@ END;
 
 CREATE TABLE QUEUED
 (
-    otp TEXT(44),
-    nonce TEXT(32) NOT NULL,
-    created DATE,
-    PRIMARY KEY (otp, nonce)
+    hash TEXT(64) PRIMARY KEY,
+    created DATE
 );
 
 CREATE TRIGGER INSERT_QUEUED AFTER INSERT ON QUEUED BEGIN

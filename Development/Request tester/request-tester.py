@@ -48,7 +48,7 @@ if ( __name__ == '__main__' ):
 
     server = '127.0.0.1:8080'
     apiId = 1
-    sharedSecret = 'IPLOQXIR1626RIO31VVYAQZAUH71TOFC462H26U07B92FMNIMUSB1R51771P9XSN'
+    sharedSecret = 'RC03R18MIOXPM0KEC76PYHAYRG2DYT9QP5RQN7LAQ6AAF6QUSV6CIT8AG9726FAV'
 
     requestTimeout = 4
     connection = http.client.HTTPConnection(server, timeout=requestTimeout)
