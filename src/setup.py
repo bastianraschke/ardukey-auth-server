@@ -10,7 +10,7 @@ setup(
     author          = 'Bastian Raschke',
     author_email    = 'bastian.raschke@posteo.de',
     url             = 'https://sicherheitskritisch.de',
-    license         = 'Simplified BSD License',
+    license         = 'D-FSL',
     package_dir     = {'': 'files'},
     packages        = ['ardukeyauth'],
 )
