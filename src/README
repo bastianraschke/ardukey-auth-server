@@ -31,6 +31,20 @@ And fix the dependency problems, if occurred:
 
 ~# apt-get -f install
 
+## Configuration
+## Note: All changes will be done in file "/etc/ardukey-auth-server.conf".
+##
+
+You should change the address, the server is listening on. This address
+must be available for the clients (PAM module for example). Otherwise the
+clients will not be able to do two factor authentication!
+
+server_address = 11.22.33.44
+
+Testart the auth server:
+
+~# /etc/init.d/ardukey-auth-server restart
+
 
 ## Maintaining
 ##
@@ -47,10 +61,14 @@ Now, generate an API key to be able to sign your requests to your auth server:
 ~# ardukey-auth-conf --generate-apikey
 
 The command outputs the "API id" and the "Shared secret". Every system/service
-which wants to communicate with the auth server needs its *own* API key!
+which wants to communicate with the auth server needs its own API key!
 
 For example an administrator who wants to set up an ArduKey PAM module on his
 server needs one API key to be able to use his auth server.
+
+Check out the man page of "ardukey-auth-conf" for all available commands:
+
+~$ man ardukey-auth-conf
 
 
 ## Request structure
