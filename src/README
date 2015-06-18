@@ -41,7 +41,7 @@ clients will not be able to do two factor authentication!
 
 server_address = 11.22.33.44
 
-Testart the auth server:
+Restart the auth server:
 
 ~# /etc/init.d/ardukey-auth-server restart
 
