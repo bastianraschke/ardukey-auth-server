@@ -9,7 +9,3 @@ All rights reserved.
 """
 
 __version__ = '1.1'
-__copyright__ = 'Bastian Raschke'
-__organization__ = 'Bastian Raschke'
-__license__ = 'Simplified BSD License'
-__authors__ = ['Bastian Raschke']
