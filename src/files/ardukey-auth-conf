@@ -384,8 +384,13 @@ if ( __name__ == '__main__' ):
 
     ## Try to parse configuration file
     try:
+        configurationFilePath = '/etc/ardukey-auth-server.conf'
+
+        if ( os.access(configurationFilePath, os.R_OK) == False ):
+            raise Exception('The configuration file "' + configurationFilePath + '" is not readable!')
+        
         configurationInstance = configuration.getInstance()
-        configurationInstance.setFilePath('/etc/ardukey-auth-server.conf')
+        configurationInstance.setFilePath(configurationFilePath)
 
         databaseFilePath = configurationInstance.get('database_file')
         logFilePath = configurationInstance.get('log_file')

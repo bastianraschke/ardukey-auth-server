@@ -41,7 +41,7 @@ available for all systems that should verify One-Time passwords (OTP):
 
 server_address = 11.22.33.44
 
-Than restart the auth server:
+Than restart the authserver:
 
 ~# /etc/init.d/ardukey-auth-server restart
 
@@ -55,10 +55,10 @@ First add an ArduKey device with the following command:
 
 Note: In this example, an ArduKey device with the public id "cccccccccccb",
 the secret id "b0d4a2d69bc4" and the AES key "7a1858592fcb76bd5eb2685421aed45e"
-will be added to auth servers database.
+will be added to authservers database.
 
 All systems (a PAM module for example) that should verify OTPs from users need
-a valid "API key" to sign and verify communication to/from auth server.
+a valid "API key" to sign and verify communication to/from authserver.
 
 Now, generate a new API key:
 
@@ -112,6 +112,6 @@ request parameter values: hmac = SHA256(apiId + otp + nonce)
 ##
 
 Additionally you can check out the following article, which explains the
-complete ArduKey infrastructure in detail (the article is in german):
+complete ArduKey infrastructure in detail (the article is in German):
 
 https://sicherheitskritisch.de/2015/06/ardukey-otp-generator-fuer-zweifaktor-authentifizierung-2fa-mit-arduino/
