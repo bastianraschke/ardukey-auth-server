@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(
-    name            = 'ArduKey auth-server',
+    name            = 'ardukeyauth',
     version         = '1.0.1', ## Never forget to change module version as well!
     description     = 'ArduKey authentication server written in Python 3.',
     author          = 'Bastian Raschke',

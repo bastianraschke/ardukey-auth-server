@@ -1,11 +1,11 @@
-ardukey-auth (1.0.1) unstable; urgency=low
+ardukey-auth-server (1.0.1) unstable; urgency=low
 
   * Fixed some typos in README and program
   * Changed file headers
 
  -- Bastian Raschke <bastian.raschke@posteo.de>  Fri, 03 Jul 2015 16:53:06 +0200
 
-ardukey-auth (1.0.0) unstable; urgency=low
+ardukey-auth-server (1.0.0) unstable; urgency=low
 
   * Initial release (Closes: #123456)
 
