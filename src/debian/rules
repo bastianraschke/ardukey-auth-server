@@ -9,7 +9,7 @@ override_dh_install:
 
 override_dh_auto_clean:
 	dh_auto_clean
-	rm -rf ./build/ ./files/ardukeyauth/__pycache__/
+	rm -rf ./build/ ./files/ardukeyauth.egg-info/ ./files/ardukeyauth/__pycache__/
 	rm -f ./files/ardukey-auth-server.sqlite
 
 override_dh_auto_build:
