@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-ArduKey authserver
+ArduKey auth-server
 
 Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>
 All rights reserved.
@@ -36,7 +36,7 @@ class ArduKeyAuthserver(http.server.BaseHTTPRequestHandler):
     The Python version string.
     """
 
-    server_version = 'ArduKey authserver/' + VERSION
+    server_version = 'ArduKey auth-server/' + VERSION
 
     ## Hide the sys_version attribute
     sys_version = ''
@@ -211,5 +211,5 @@ if ( __name__ == '__main__' ):
         logging.getLogger().error('Unexpected server error occured during serving:', exc_info=1)
 
     finally:
-        logging.getLogger().info('Shutting down ArduKey authserver.')
+        logging.getLogger().info('Shutting down ArduKey auth-server.')
         httpServer.socket.close()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-ArduKey authserver
+ArduKey auth-server
 
 Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>,
                Philipp Meisberger <team@pm-codeworks.de>

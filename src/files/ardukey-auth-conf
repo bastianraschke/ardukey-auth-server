@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-ArduKey authserver configuration tool
+ArduKey auth-server configuration tool
 
 Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>
 All rights reserved.
@@ -406,11 +406,11 @@ if ( __name__ == '__main__' ):
     sqlitewrapper.getInstance().setFilePath(databaseFilePath)
 
     parser = argparse.ArgumentParser(add_help=True,
-        description='ArduKey authserver configuration tool ' + VERSION)
+        description='ArduKey auth-server configuration tool ' + VERSION)
 
     parser.add_argument('-v', '--version',
         action='version',
-        version='ArduKey authserver configuration tool ' + VERSION,
+        version='ArduKey auth-server configuration tool ' + VERSION,
         help='Print version and exit.'
     )
 

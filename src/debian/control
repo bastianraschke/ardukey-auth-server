@@ -17,8 +17,8 @@ Depends: python3 (>= 3.2),
          python3-crypto,
          python-sqlite,
          ${python3:Depends}, ${misc:Depends}
-Description: Python 3 modules for the ArduKey authserver.
- The ArduKey authserver provides a verification service for ArduKey devices.
+Description: Python 3 modules for the ArduKey auth-server.
+ The ArduKey auth-server provides a verification service for ArduKey devices.
  .
  This package contains the required Python 3 module for the server.
 
@@ -32,7 +32,7 @@ Depends: adduser,
          python-argparse,
          python3-ardukey-auth (= ${binary:Version}),
          ${python3:Depends}, ${misc:Depends}
-Description: ArduKey authserver written in Python 3.
- The ArduKey authserver provides a verification service for ArduKey devices.
+Description: ArduKey auth-server written in Python 3.
+ The ArduKey auth-server provides a verification service for ArduKey devices.
  .
  This package contains the server and configuration files.
