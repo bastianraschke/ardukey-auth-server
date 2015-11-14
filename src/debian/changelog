@@ -1,12 +1,19 @@
+ardukey-auth-server (1.0.2) unstable; urgency=low
+
+  * Renamed python package name in setup.py
+  * Changed file headers
+
+ -- Bastian Raschke <bastian.raschke@posteo.de>  Sat, 14 Nov 2015 23:12:45 +0100
+
 ardukey-auth-server (1.0.1) unstable; urgency=low
 
   * Fixed some typos in README and program
   * Changed file headers
 
- -- Bastian Raschke <bastian.raschke@posteo.de>  Fri, 03 Jul 2015 16:53:06 +0200
+ -- Bastian Raschke <bastian.raschke@posteo.de>  Fri, 03 Jul 2015 16:53:06 +0100
 
 ardukey-auth-server (1.0.0) unstable; urgency=low
 
   * Initial release (Closes: #123456)
 
- -- Bastian Raschke <bastian.raschke@posteo.de>  Sun, 28 Jun 2015 13:35:40 +0200
+ -- Bastian Raschke <bastian.raschke@posteo.de>  Sun, 28 Jun 2015 13:35:40 +0100

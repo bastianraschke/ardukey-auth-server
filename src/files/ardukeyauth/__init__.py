@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-ArduKey auth-server
+ArduKey auth server
 
 Copyright 2015 Bastian Raschke <bastian.raschke@posteo.de>
 All rights reserved.
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
