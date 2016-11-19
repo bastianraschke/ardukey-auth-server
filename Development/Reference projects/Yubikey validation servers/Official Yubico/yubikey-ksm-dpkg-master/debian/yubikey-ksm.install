@@ -1,2 +1,0 @@
-debian/conf/dbconfig/* /usr/share/dbconfig-common/data/yubikey-ksm/install/
-debian/conf/apache.conf /etc/yubico/ksm/

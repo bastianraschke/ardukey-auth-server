@@ -1,7 +1,0 @@
-#!/usr/bin/make -f
-
-override_dh_installchangelogs:
-	dh_installchangelogs ChangeLog
-
-%:
-	dh $@ --with python3 --buildsystem=python_distutils

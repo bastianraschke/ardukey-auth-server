@@ -1,2 +1,0 @@
-version=3
-opts=pgpsigurlmangle=s/$/.sig/ https://developers.yubico.com/yubikey-val/Releases/ yubikey-val-(\d[\d.]*)\.(?:zip|tgz|tbz2|txz|tar\.gz|tar\.bz2|tar\.xz)
