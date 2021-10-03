@@ -87,8 +87,7 @@ The HMAC is a SHA-256 hash value that is calculated by key sorted (alphabetical)
 
 ## Further information
 
-Additionally you can check out [this article](https://sicherheitskritisch.de/2015/06/ardukey-otp-generator-fuer-zweifaktor-authentifizierung-2fa-mit-arduino/), which explains the complete ArduKey infrastructure in detail (the article is in German):
-
+Additionally you can check out [this article](https://sicherheitskritisch.de/2015/06/ardukey-otp-generator-fuer-zweifaktor-authentifizierung-2fa-mit-arduino/), which explains the complete ArduKey infrastructure in detail (the article is in German).
 
 ## Questions
 
