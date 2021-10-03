@@ -69,7 +69,7 @@ Now you will see all debugging output from the `ardukey-auth-server`.
 
 ## Request structure
 
-Requests will be sent via HTTP GET to:  
+Requests will be sent via HTTP GET to:
 http://127.0.0.1:8080/ardukeyotp/1.0/verify
 
 with the following parameters:
@@ -81,13 +81,13 @@ with the following parameters:
 | apiId     | The API ID, to identify the API key.     |
 | hmac      | The signature of this request.           |
 
-The HMAC is a SHA-256 hash value that is calculated by key sorted (alphabetical) request parameter values:  
+The HMAC is a SHA-256 hash value that is calculated by key sorted (alphabetical) request parameter values:
 
     hmac = SHA256(apiId + otp + nonce)
 
 ## Further information
 
-Additionally you can check out [this article](https://sicherheitskritisch.de/2015/06/ardukey-otp-generator-fuer-zweifaktor-authentifizierung-2fa-mit-arduino/), which explains the complete ArduKey infrastructure in detail (the article is in German):  
+Additionally you can check out [this article](https://sicherheitskritisch.de/2015/06/ardukey-otp-generator-fuer-zweifaktor-authentifizierung-2fa-mit-arduino/), which explains the complete ArduKey infrastructure in detail (the article is in German):
 
 
 ## Questions
